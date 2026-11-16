@@ -102,18 +102,12 @@ function App(){
   try{
    const board=boardRef.current
    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'})
-   const variants=comparison?['before','after']:[phase]
-   for(let i=0;i<variants.length;i++){
-    if(i>0)doc.addPage()
-    const variant=variants[i]
-    if(comparison){setPhase(variant);await new Promise(resolve=>setTimeout(resolve,850))}
-    const shot=await toPng(board,{backgroundColor:'#162022',pixelRatio:2,cacheBust:true,filter:node=>!node.classList?.contains('react-flow__controls')})
-    doc.setFillColor(17,25,27);doc.rect(0,0,297,210,'F')
-    doc.setTextColor(240,238,229);doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text('DELIMARKET  /  '+topic.title.toUpperCase(),15,17)
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(156,187,170);doc.text(variant==='after'?'ENGENHARIA REFINADA':'DIAGNÓSTICO ORIGINAL',15,24)
-    doc.addImage(shot,'PNG',12,32,273,155,undefined,'FAST')
-    doc.setTextColor(170,176,174);doc.setFontSize(8);doc.text('Segurança e Auditoria de Sistemas  •  Diagrama conceitual / DeliMarket',15,201)
-   }
+   const shot=await toPng(board,{backgroundColor:'#162022',pixelRatio:2,cacheBust:true,filter:node=>!node.classList?.contains('react-flow__controls')})
+   doc.setFillColor(17,25,27);doc.rect(0,0,297,210,'F')
+   doc.setTextColor(240,238,229);doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text('DELIMARKET  /  '+topic.title.toUpperCase(),15,17)
+   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(156,187,170);doc.text(comparison?'COMPARAÇÃO  /  ANTES × DEPOIS':phase==='after'?'ENGENHARIA REFINADA':'DIAGNÓSTICO ORIGINAL',15,24)
+   doc.addImage(shot,'PNG',12,32,273,155,undefined,'FAST')
+   doc.setTextColor(170,176,174);doc.setFontSize(8);doc.text('Segurança e Auditoria de Sistemas  •  Diagrama conceitual / DeliMarket',15,201)
    doc.save('delimarket-'+topic.id+(comparison?'-comparativo':'-'+phase)+'.pdf')
   }catch(e){console.error(e);alert('Não foi possível exportar este diagrama. Tente novamente.')}
   finally{setIsExporting(false)}
