@@ -65,7 +65,7 @@ const riskOrder={critical:0,high:1,medium:2}
 function ComponentNode({data,selected}){
  const Icon=ICONS[data.item.icon]||Shield
  return <div className={'clean-card '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} title={data.item.problem} tabIndex={0} role="button" aria-label={data.item.label} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
-  <div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
+  <Handle type="target" position={Position.Left} style={{opacity:0,pointerEvents:"none"}}/><Handle type="source" position={Position.Right} style={{opacity:0,pointerEvents:"none"}}/><div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
   <strong>{data.item.label}</strong>
   <p>{data.after?data.item.after:data.item.before}</p>
  </div>
