@@ -103,7 +103,7 @@ function Diagram({board,phase,selected,onInspect,onReady}){
    return {nodes:[...zones,...parts],edges:connections}
  },[board,after,selected,onInspect])
  useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.065,maxZoom:.98,duration:500}),160);return()=>clearTimeout(t)},[board.id,phase,flow])
- return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{padding:.065}} minZoom={.25} maxZoom={1.7} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} onInit={onReady} proOptions={{hideAttribution:true}} colorMode="dark">
+ return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{padding:.065}} minZoom={.25} maxZoom={1.7} nodesDraggable={false} nodesConnectable={false} elementsSelectable={true} onNodeClick={(_,node)=>{if(node.type==='component')onInspect(node.data.item)}} onInit={onReady} colorMode="dark">
    <Background variant="dots" color="#343b4a" gap={23} size={1}/>
    <Controls showInteractive={false} position="bottom-left"/>
  </ReactFlow>
