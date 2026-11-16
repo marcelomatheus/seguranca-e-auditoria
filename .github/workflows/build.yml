@@ -1,0 +1,35 @@
+name: Build React application
+
+on:
+  push:
+    branches:
+      - main
+      - feat/interactive-security-boards
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Validate Vite build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build production bundle
+        run: npm run build
+      - name: Publish compiled bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: delimarket-dist
+          path: dist
+          if-no-files-found: error
