@@ -5,6 +5,8 @@ import '@xyflow/react/dist/style.css'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { Activity, ArrowDownRight, ArrowLeftRight, ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Clock3, Cloud, Database, Download, FileCheck2, Fingerprint, GitBranch, HardDrive, Info, KeyRound, Layers3, LockKeyhole, Maximize2, Menu, MonitorCheck, Network, Play, RotateCcw, Search, Server, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Wifi, X, Zap } from 'lucide-react'
+import { expandBoards } from './boardEnhancements'
+import { Users, Thermometer, CloudUpload, ChartNoAxesCombined, Radar, ClipboardCheck, Tags, Workflow, AlertTriangle, Gauge, ListChecks, FileWarning, FilePlus, RefreshCw, UserX, GitFork, Bot, ScrollText, Siren, CalendarClock, HardDriveDownload, BellRing, ScanSearch, Boxes, Timer, EyeOff, CalendarRange, MessageSquareText, Trash2, Landmark, GraduationCap } from 'lucide-react'
 import './styles.css'
 
 const ICONS = { Activity, BookOpen, CircleAlert, Clock3, Cloud, Database, FileCheck2, Fingerprint, GitBranch, HardDrive, KeyRound, Layers3, LockKeyhole, MonitorCheck, Network, RotateCcw, Server, Shield, ShieldAlert, ShieldCheck, Wifi, Zap, Settings2 }
@@ -53,94 +55,130 @@ const cards = [
   {id:'phase4',label:'181–360 dias',icon:'MonitorCheck',before:'Revisão anual prevista',after:'Ciclo de auditoria',problem:'Melhorias podem perder força sem acompanhamento.',solution:'Treinar equipes, auditar controles, revisar riscos residuais e atualizar a direção.',value:'Proteção sustentável.',evidence:'Indicadores e ações corretivas encerradas.',risk:'medium'}
  ],edges:[['phase1','phase2'],['phase2','phase3'],['phase3','phase4']]}
 ]
-const RISK = {critical:'CRÍTICO',high:'ALTO',medium:'MODERADO'}
-function GraphNode({data,selected}) {
- const Icon = ICONS[data.icon] || Shield
- return <div className={'graph-node '+(selected?'selected ':'')+(data.isAfter?'after':'before')} title={data.tooltip} onClick={()=>data.open(data.item)}>
-  <Handle type="target" position={Position.Left} className="port" />
-  <div className="node-top"><span className="node-icon"><Icon size={18} strokeWidth={1.8}/></span><span className={'risk risk-'+data.risk}>{RISK[data.risk]}</span></div>
-  <strong>{data.label}</strong><span className="node-description">{data.isAfter?data.item.after:data.item.before}</span>
-  <div className="node-foot"><span>{data.isAfter?'REFINAMENTO':'BASE ORIGINAL'}</span><ArrowUpRightIcon/></div>
-  <Handle type="source" position={Position.Right} className="port"/>
+
+Object.assign(ICONS,{Users,Thermometer,CloudUpload,ChartNoAxesCombined,Radar,ClipboardCheck,Tags,Workflow,AlertTriangle,Gauge,ListChecks,FileWarning,FilePlus,RefreshCw,UserX,GitFork,Bot,ScrollText,Siren,CalendarClock,HardDriveDownload,BellRing,ScanSearch,Boxes,Timer,EyeOff,CalendarRange,MessageSquareText,Trash2,Landmark,GraduationCap,RotateCcw})
+const BOARDS=expandBoards(cards)
+const riskLabels={critical:'CRÍTICO',high:'ALTO',medium:'MODERADO'}
+const stateLabels={before:'ESTRUTURA ORIGINAL',after:'REENGENHARIA PROPOSTA'}
+const riskOrder={critical:0,high:1,medium:2}
+function ComponentNode({data,selected}){
+ const Icon=ICONS[data.item.icon]||Shield
+ return <div className={'element '+(data.after?'element-after':'element-before')+(selected?' element-selected':'')} title={data.item.problem} role="button" tabIndex={0} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
+  <Handle className="port port-in" type="target" position={Position.Left}/>
+  <div className="element-head"><span className="element-symbol"><Icon size={17} strokeWidth={1.75}/></span><span className={'severity severity-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
+  <div className="element-title">{data.item.label}</div>
+  <p>{data.after?data.item.after:data.item.before}</p>
+  <div className="element-foot"><span>{data.after?'CONTROLE REFINADO':'PONTO DE PARTIDA'}</span><ArrowRight size={12}/></div>
+  <Handle className="port port-out" type="source" position={Position.Right}/>
  </div>
 }
-function ArrowUpRightIcon(){return <ArrowRight size={14} />}
-const nodeTypes = {security:GraphNode}
-function Canvas({topic,phase,selected,onSelect,instanceRef}) {
+function ZoneNode({data}){
+ return <div className="zone" style={{height:data.height}}>
+  <div className="zone-head"><span className="zone-number">{String(data.index+1).padStart(2,'0')}</span><div><strong>{data.title}</strong><p>{data.subtitle}</p></div><span className="zone-count">{data.count} ATIVOS</span></div>
+ </div>
+}
+const nodeTypes={component:ComponentNode,zone:ZoneNode}
+function Diagram({board,phase,selected,onInspect,onReady}){
  const flow=useReactFlow()
- const isAfter=phase==='after'
- const count=topic.nodes.length
- const positions=count===5?[[70,100],[460,100],[70,365],[460,365],[850,230]]:count===4?[[75,200],[440,200],[805,200],[1170,200]]:[]
- const nodes=useMemo(()=>topic.nodes.map((item,index)=>({id:item.id,type:'security',position:{x:positions[index]?.[0]||80+index*320,y:positions[index]?.[1]||180},selected:selected?.id===item.id,data:{item,icon:item.icon,risk:item.risk,label:item.label,isAfter,tooltip:item.problem,open:onSelect}})),[topic,phase,selected,onSelect])
- const edges=useMemo(()=>topic.edges.map(([source,target],i)=>({id:'edge-'+i,source,target,type:'smoothstep',animated:isAfter,style:{stroke:isAfter?'#8cc7a2':'#82766e',strokeWidth:isAfter?2.2:1.5},markerEnd:{type:MarkerType.ArrowClosed,color:isAfter?'#8cc7a2':'#82766e',width:15,height:15}})),[topic,phase])
- useEffect(()=>{const timer=setTimeout(()=>flow.fitView({padding:.17,duration:650,maxZoom:1.08}),100);return()=>clearTimeout(timer)},[topic.id,phase,flow])
- return <ReactFlow key={topic.id+'-'+phase} nodes={nodes} edges={edges} nodeTypes={nodeTypes} onPaneClick={()=>onSelect(null)} onInit={instanceRef} fitView fitViewOptions={{padding:.18}} nodesDraggable={false} nodesConnectable={false} elementsSelectable={true} minZoom={.35} maxZoom={1.7} proOptions={{hideAttribution:true}} colorMode="dark">
-   <Background variant="dots" gap={22} size={1.2} color="#334244" />
-   <Controls showInteractive={false} position="bottom-left" />
+ const after=phase==='after'
+ const {nodes,edges}=useMemo(()=>{
+   const ordered=board.zones.map((_,zone)=>board.nodes.filter(n=>n.zone===zone))
+   const height=Math.max(690,...ordered.map(group=>160+group.length*142))
+   const zones=board.zones.map(([title,subtitle],i)=>({
+     id:'zone-'+i,type:'zone',position:{x:30+i*358,y:24},draggable:false,selectable:false,connectable:false,zIndex:-10,
+     data:{index:i,title,subtitle,count:ordered[i].length,height},style:{width:346,height},focusable:false
+   }))
+   const parts=ordered.flatMap((group,zone)=>group.map((item,row)=>({
+     id:item.id,type:'component',position:{x:56+zone*358,y:137+row*142},draggable:false,connectable:false,selected:selected?.id===item.id,
+     data:{item,after,inspect:onInspect}
+   })))
+   const ids=new Set(board.nodes.map(n=>n.id))
+   const connections=board.edges.filter(([source,target])=>ids.has(source)&&ids.has(target)).map(([source,target,label],i)=>({
+     id:'link-'+i,source,target,type:'smoothstep',animated:after,selectable:false,zIndex:1,
+     label:label||undefined,labelStyle:{fill:'#91a2ba',fontSize:9,fontFamily:'IBM Plex Mono'},
+     labelBgPadding:[5,3],labelBgBorderRadius:4,labelBgStyle:{fill:'#161b24',fillOpacity:.92},
+     style:{stroke:after?'#667ba9':'#6e6268',strokeWidth:after?1.65:1.35,opacity:.72},
+     markerEnd:{type:MarkerType.ArrowClosed,color:after?'#7a94ca':'#82717b',width:13,height:13}
+   }))
+   return {nodes:[...zones,...parts],edges:connections}
+ },[board,after,selected,onInspect])
+ useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.065,maxZoom:.98,duration:500}),160);return()=>clearTimeout(t)},[board.id,phase,flow])
+ return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{padding:.065}} minZoom={.25} maxZoom={1.7} nodesDraggable={false} nodesConnectable={false} elementsSelectable={true} onNodeClick={(_,node)=>{if(node.type==='component')onInspect(node.data.item)}} onInit={onReady} colorMode="dark">
+   <Background variant="dots" color="#343b4a" gap={23} size={1}/>
+   <Controls showInteractive={false} position="bottom-left"/>
  </ReactFlow>
 }
-function Board({topic,phase,selected,onSelect,instanceRef}){return <ReactFlowProvider><Canvas topic={topic} phase={phase} selected={selected} onSelect={onSelect} instanceRef={instanceRef}/></ReactFlowProvider>}
-function App(){
+function DiagramBoard(props){return <ReactFlowProvider><Diagram {...props}/></ReactFlowProvider>}
+function Inspector({item,board,onClose}){
+ const Icon=ICONS[item.icon]||Shield
+ return <><div className="backdrop" onClick={onClose}/><aside className="inspector" aria-label="Detalhamento do controle">
+  <div className="inspector-top"><span>INSPEÇÃO DE COMPONENTE</span><button className="icon-action" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button></div>
+  <div className="inspector-scroll">
+   <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>{riskLabels[item.risk]}</div>
+   <h2>{item.label}</h2><p className="inspect-subtitle">{board.title} / estudo de caso DeliMarket</p>
+   <div className="delta"><div><span>ANTES</span><p>{item.before}</p></div><ArrowRight size={20}/><div><span>DEPOIS</span><p>{item.after}</p></div></div>
+   {[['01 / PROBLEMA IDENTIFICADO',item.problem],['02 / DEFINIÇÃO DE REENGENHARIA',item.solution],['03 / VALOR PARA A DELIMARKET',item.value],['04 / EVIDÊNCIA DE AUDITORIA',item.evidence],['05 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
+   <div className="inspect-note">Os estados representam o diagnóstico e a proposta de evolução. A aplicação não afirma que os controles já foram implantados.</div>
+  </div>
+ </aside></>
+}
+function Studio(){
  const [active,setActive]=useState('architecture')
  const [phase,setPhase]=useState('after')
- const [comparison,setComparison]=useState(false)
+ const [compare,setCompare]=useState(false)
  const [selected,setSelected]=useState(null)
- const [sidebar,setSidebar]=useState(false)
- const [isExporting,setIsExporting]=useState(false)
- const [search,setSearch]=useState('')
- const [showSources,setShowSources]=useState(false)
+ const [sources,setSources]=useState(false)
+ const [exporting,setExporting]=useState(false)
+ const [showTabs,setShowTabs]=useState(true)
+ const [showHelp,setShowHelp]=useState(false)
  const boardRef=useRef(null)
- const topic=cards.find(t=>t.id===active)||cards[0]
- const currentIndex=cards.findIndex(t=>t.id===active)
- const filtered=cards.filter(t=>(t.title+' '+t.short).toLowerCase().includes(search.toLowerCase()))
- const changeTopic=(id)=>{setActive(id);setSelected(null);setSidebar(false)}
- const selectItem=useCallback((node)=>setSelected(node),[])
- const setPhaseSafe=(v)=>{setPhase(v);setSelected(null)}
- const downloadPdf=async()=>{
-  if(isExporting)return
-  setIsExporting(true)
+ const board=BOARDS.find(x=>x.id===active)||BOARDS[0]
+ const onInspect=useCallback(item=>setSelected(item),[])
+ const pickBoard=id=>{setActive(id);setSelected(null)}
+ const chooseMode=mode=>{setCompare(mode==='compare');if(mode!=='compare')setPhase(mode);setSelected(null)}
+ const mode=compare?'compare':phase
+ const exportPdf=async()=>{
+  if(exporting)return
+  setExporting(true)
   try{
-   const board=boardRef.current
-   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'})
-   const shot=await toPng(board,{backgroundColor:'#162022',pixelRatio:2,cacheBust:true,filter:node=>!node.classList?.contains('react-flow__controls')})
-   doc.setFillColor(17,25,27);doc.rect(0,0,297,210,'F')
-   doc.setTextColor(240,238,229);doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text('DELIMARKET  /  '+topic.title.toUpperCase(),15,17)
-   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(156,187,170);doc.text(comparison?'COMPARAÇÃO  /  ANTES × DEPOIS':phase==='after'?'ENGENHARIA REFINADA':'DIAGNÓSTICO ORIGINAL',15,24)
-   doc.addImage(shot,'PNG',12,32,273,155,undefined,'FAST')
-   doc.setTextColor(170,176,174);doc.setFontSize(8);doc.text('Segurança e Auditoria de Sistemas  •  Diagrama conceitual / DeliMarket',15,201)
-   doc.save('delimarket-'+topic.id+(comparison?'-comparativo':'-'+phase)+'.pdf')
-  }catch(e){console.error(e);alert('Não foi possível exportar este diagrama. Tente novamente.')}
-  finally{setIsExporting(false)}
+   const node=boardRef.current
+   const image=await toPng(node,{pixelRatio:1.7,backgroundColor:'#0e1117',cacheBust:true,filter:element=>!element.classList?.contains('react-flow__controls')})
+   const pdf=new jsPDF({format:'a3',orientation:'landscape',unit:'mm'})
+   pdf.setFillColor(11,14,20);pdf.rect(0,0,420,297,'F')
+   pdf.setTextColor(226,231,240);pdf.setFontSize(17);pdf.text('DELIMARKET   /   '+board.title.toUpperCase(),16,19)
+   pdf.setFontSize(9);pdf.setTextColor(151,168,195);pdf.text(compare?'COMPARATIVO — ANTES / DEPOIS':stateLabels[phase],16,27)
+   pdf.addImage(image,'PNG',13,37,394,241,undefined,'FAST')
+   pdf.setTextColor(123,137,159);pdf.setFontSize(8);pdf.text('Segurança e Auditoria de Sistemas   •   Estudo de caso / propostas sujeitas a validação',16,288)
+   pdf.save('delimarket-'+board.id+'-'+mode+'.pdf')
+  }catch(error){console.error('Exportação falhou',error);alert('Não foi possível exportar o PDF. Verifique o console e tente novamente.')}
+  finally{setExporting(false)}
  }
- const currentMode=comparison?'comparison':phase
- return <div className="app">
-  <aside className={'sidebar '+(sidebar?'sidebar-open':'')}>
-   <div className="brand"><div className="brand-mark"><ShieldCheck size={22}/></div><div className="brand-copy"><strong>DELIMARKET<span className="brand-star">✳</span></strong><small>SECURITY ARCHITECTURE STUDIO</small></div><button className="mobile-close" onClick={()=>setSidebar(false)} aria-label="Fechar menu"><X size={18}/></button></div>
-   <div className="workspace-label"><span>WORKSPACE / 01</span><span className="workspace-dot"/></div>
-   <div className="project-title"><span className="project-square"><Layers3 size={18}/></span><div><strong>Reengenharia</strong><small>Auditoria de sistemas</small></div><ChevronDown size={15}/></div>
-   <div className="sidebar-section-title">BOARDS <span>{String(cards.length).padStart(2,'0')}</span></div>
-   <div className="search-wrap"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar board..." aria-label="Buscar board"/></div>
-   <nav className="nav-list">{filtered.map(t=>{const Icon=ICONS[t.icon] || Shield;return <button key={t.id} className={'nav-item '+(active===t.id?'nav-active':'')} onClick={()=>changeTopic(t.id)}><span className="nav-icon"><Icon size={18} strokeWidth={1.8}/></span><span>{t.short}</span><small>{t.num}</small></button>})}{filtered.length===0&&<p className="empty">Nenhum board encontrado.</p>}</nav>
-   <div className="sidebar-bottom"><div className="progress-header"><span>PLANO DE REENGENHARIA</span><span>07 / 07</span></div><div className="progress-track"><div/></div><div className="note"><span className="note-icon"><Sparkles size={17}/></span><div><strong>Uma arquitetura auditável</strong><p>Explore cada controle e compare sua evolução.</p></div></div><div className="sidebar-footer"><span className="online-pulse"/> Estudo de caso acadêmico <span className="footer-version">V1.0</span></div></div>
-  </aside>
-  {sidebar&&<div className="mobile-overlay" onClick={()=>setSidebar(false)}/>}
-  <main className="main">
-   <header className="topbar"><div className="breadcrumbs"><button className="mobile-menu" onClick={()=>setSidebar(true)} aria-label="Abrir menu"><Menu size={21}/></button><span>Workspace</span><ChevronRight size={14}/><span>Boards</span><ChevronRight size={14}/><strong>{topic.short}</strong></div><div className="top-actions"><span className="top-status"><span/> ESTUDO DE CASO</span><button className="icon-button sources-button" onClick={()=>setShowSources(!showSources)} title="Fontes e premissas"><BookOpen size={17}/></button><button className="export-button" onClick={downloadPdf} disabled={isExporting}><Download size={16}/>{isExporting?'Gerando PDF...':'Exportar PDF'}</button></div></header>
-   <div className="content">
-    <div className="eyebrow"><span className="eyebrow-line"/> BOARD {topic.num} / {String(cards.length).padStart(2,'0')} <span className="eyebrow-sep">·</span> SECURITY REVIEW</div>
-    <div className="heading-row"><div><h1>{topic.title}<span className="heading-period">.</span></h1><p className="subtitle">{topic.intro}</p></div><div className="pagination"><button onClick={()=>changeTopic(cards[(currentIndex+cards.length-1)%cards.length].id)} aria-label="Board anterior"><ChevronLeft size={18}/></button><span>{topic.num} <i>/</i> 07</span><button onClick={()=>changeTopic(cards[(currentIndex+1)%cards.length].id)} aria-label="Próximo board"><ChevronRight size={18}/></button></div></div>
-    <div className="value-ribbon"><div className="value-icon"><Activity size={18}/></div><span><strong>VALOR PARA O CLIENTE</strong> {topic.value}</span><span className="value-arrow"><ArrowDownRight size={18}/></span></div>
-    <div className="canvas-toolbar"><div className="view-switch" role="group" aria-label="Modo de visualização"><button className={currentMode==='before'?'active':''} onClick={()=>{setComparison(false);setPhaseSafe('before')}}><CircleAlert size={15}/> Antes</button><button className={currentMode==='after'?'active':''} onClick={()=>{setComparison(false);setPhaseSafe('after')}}><ShieldCheck size={15}/> Depois</button><button className={currentMode==='comparison'?'active':''} onClick={()=>{setComparison(true);setSelected(null)}}><ArrowLeftRight size={15}/> Comparar</button></div><div className="toolbar-right"><span className="toolbar-hint"><span className="hint-point"/> CLIQUE NOS NÓS PARA EXPLORAR</span><span className="toolbar-divider"/><button className="tool-button" onClick={()=>setShowSources(!showSources)} title="Fundamentação"><Info size={17}/></button></div></div>
-    <div className={'board-shell '+(comparison?'board-comparison':'')} ref={boardRef}>
-      {comparison?<><div className="split-pane"><div className="pane-label old-label"><span/> ANTES <small>PROPOSTA ORIGINAL</small></div><Board topic={topic} phase="before" selected={selected} onSelect={selectItem}/></div><div className="split-pane"><div className="pane-label new-label"><span/> DEPOIS <small>REENGENHARIA</small></div><Board topic={topic} phase="after" selected={selected} onSelect={selectItem}/></div></>:<><div className="board-meta"><span className={'board-indicator '+(phase==='after'?'indicator-good':'indicator-old')}/><span>{phase==='after'?'ESTADO REFINADO':'ESTADO ORIGINAL'}</span><span className="meta-separator">/</span><span>{topic.nodes.length} COMPONENTES</span><span className="meta-separator">/</span><span>VISÃO CONCEITUAL</span></div><Board topic={topic} phase={phase} selected={selected} onSelect={selectItem}/></>}
-      <div className="board-bottom-right"><span>DRAG TO PAN</span><span className="board-bottom-dot"/> <span>SCROLL TO ZOOM</span></div>
+ const totals={nodes:board.nodes.length,connections:board.edges.length,critical:board.nodes.filter(n=>n.risk==='critical').length}
+ return <div className="studio">
+   <header className="app-header">
+    <div className="identity"><span className="identity-symbol"><Shield size={17}/></span><strong>DELIMARKET</strong><span className="identity-divider"/><span>SECURITY STUDIO</span></div>
+    <div className="header-middle"><span className="breadcrumb">REENGENHARIA /</span><span>{board.num} — {board.short}</span></div>
+    <div className="header-actions"><button className="header-button" onClick={()=>setSources(true)}><BookOpen size={15}/><span>Referências</span></button><button className="header-button export" onClick={exportPdf} disabled={exporting}><Download size={15}/><span>{exporting?'Exportando...':'Exportar PDF'}</span></button></div>
+   </header>
+   <div className="board-topbar">
+    <div className="board-identity"><div className="board-index">{board.num}</div><div className="board-name"><h1>{board.title}</h1><p>{board.intro}</p></div></div>
+    <div className="board-actions">
+     <span className="board-stat">{totals.nodes} <small>COMPONENTES</small></span><span className="board-stat">{totals.connections} <small>CONEXÕES</small></span>
+     <div className="mode-picker" role="group" aria-label="Visualização"><button className={mode==='before'?'mode-active':''} onClick={()=>chooseMode('before')}>Antes</button><button className={mode==='after'?'mode-active':''} onClick={()=>chooseMode('after')}>Depois</button><button className={mode==='compare'?'mode-active':''} onClick={()=>chooseMode('compare')}><ArrowLeftRight size={13}/> Comparar</button></div>
     </div>
-    <div className="board-caption"><div><span className="caption-num">FIG. {topic.num}</span><strong>{topic.baseline}</strong></div><span className="caption-ref">{topic.reference}</span></div>
-    <div className="bottom-guidance"><div className="guidance-icon"><GitBranch size={19}/></div><p><strong>Leitura técnica</strong> — os diagramas representam medidas propostas, não controles já comprovadamente implantados. A auditoria deve validar sua eficácia com evidências.</p></div>
    </div>
-  </main>
-  {selected&&<><div className="inspector-backdrop" onClick={()=>setSelected(null)}/><aside className="inspector"><div className="inspector-header"><span>CONTROLE / DETALHAMENTO</span><button onClick={()=>setSelected(null)} aria-label="Fechar detalhes"><X size={19}/></button></div><div className="inspector-body"><span className={'risk risk-'+selected.risk}>{RISK[selected.risk]}</span><div className="inspector-icon">{React.createElement(ICONS[selected.icon]||Shield,{size:28,strokeWidth:1.5})}</div><h2>{selected.label}</h2><p className="inspector-lead">Comparação técnica e justificativa da reengenharia.</p><div className="compare-box"><div><span>ANTES</span><p>{selected.before}</p></div><ArrowRight size={19}/><div><span>DEPOIS</span><p>{selected.after}</p></div></div><section><h3><CircleAlert size={16}/> LACUNA / RISCO</h3><p>{selected.problem}</p></section><section><h3><ShieldCheck size={16}/> REFINAMENTO PROPOSTO</h3><p>{selected.solution}</p></section><section><h3><Activity size={16}/> VALOR GERADO</h3><p>{selected.value}</p></section><section><h3><FileCheck2 size={16}/> EVIDÊNCIA DE AUDITORIA</h3><p>{selected.evidence}</p></section><section><h3><BookOpen size={16}/> REFERÊNCIA</h3><p>{topic.reference}</p></section></div><div className="inspector-bottom"><button onClick={()=>setSelected(null)}><Check size={16}/> Entendido</button></div></aside></>}
-  {showSources&&<div className="sources-panel"><button className="sources-close" onClick={()=>setShowSources(false)}><X size={17}/></button><span className="sources-eyebrow">CRITÉRIOS DE ANÁLISE</span><h3>Fundamentação & premissas</h3><p>Estudo de caso DeliMarket: plano de ação e diagrama visual fornecidos no material acadêmico.</p><ul><li>ISO/IEC 27001 e 27002 — gestão e controles.</li><li>ISO/IEC 27005 — riscos de segurança.</li><li>ISO 22301 — continuidade do negócio.</li><li>NIST SP 800-63B — autenticação e senhas.</li><li>NIST SP 800-34 — planejamento de contingência.</li><li>LGPD — Lei nº 13.709/2018.</li></ul><p>Metas de RPO/RTO dependem da BIA; o plano visual apresenta 15 min/4 h e o detalhado propõe 5 min/1 h. Ambos são valores a validar.</p></div>}
+   <main className={'canvas-stage '+(compare?'canvas-stage-compare':'')} ref={boardRef}>
+    {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>ESTRUTURA ORIGINAL</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {stateLabels[phase]}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
+    <div className="canvas-legend"><span><i className="legend-neutral"/> ATIVO / CONTROLE</span><span><i className="legend-risk"/> RISCO CRÍTICO</span><span><i className="legend-connection"/> DEPENDÊNCIA</span></div>
+    <div className="canvas-guidance"><button onClick={()=>setShowHelp(!showHelp)} title="Instruções"><Info size={15}/></button>{showHelp&&<span>Arraste para navegar · Scroll para ampliar · Clique no componente para analisar · Use “Comparar” para visualizar a evolução</span>}</div>
+   </main>
+   <footer className="sheetbar">
+    <div className="sheetbar-label"><Layers3 size={16}/><span>BOARDS</span></div>
+    <div className="sheet-tabs" role="tablist" aria-label="Diagramas de segurança">{BOARDS.map(item=>{const Icon=ICONS[item.icon]||Shield;return <button role="tab" aria-selected={active===item.id} key={item.id} className={'sheet-tab '+(active===item.id?'sheet-tab-active':'')} onClick={()=>pickBoard(item.id)} title={item.title}><Icon size={15}/><span>{item.short}</span><small>{item.num}</small></button>})}</div>
+    <div className="sheet-right"><span><span className="status-dot"/> VISÃO CONCEITUAL</span></div>
+   </footer>
+   {selected&&<Inspector item={selected} board={board} onClose={()=>setSelected(null)}/>}
+   {sources&&<><div className="backdrop" onClick={()=>setSources(false)}/><aside className="references-panel"><div className="inspector-top"><span>FONTES E PREMISSAS</span><button className="icon-action" onClick={()=>setSources(false)}><X size={18}/></button></div><div className="references-body"><h2>Base do estudo</h2><p>O redesenho parte do plano visual e do documento detalhado da DeliMarket. A arquitetura é uma proposta acadêmica, sem alegação de instalação real dos controles.</p><h3>REFERÊNCIAS TÉCNICAS</h3><ul><li>ISO/IEC 27001, 27002 e 27005 — gestão, controles e riscos.</li><li>ISO 22301 — continuidade de negócios.</li><li>NIST SP 800-34 — planejamento de contingência.</li><li>NIST SP 800-63B — senhas, MFA e autenticação.</li><li>LGPD (Lei 13.709/2018) — tratamento e proteção de dados.</li><li>TCU — boas práticas em Segurança da Informação.</li></ul><h3>NOTA SOBRE METAS</h3><p>O material visual propõe RPO ≤ 15 min e RTO ≤ 4 h; o documento detalhado propõe RPO ≤ 5 min e RTO ≤ 1 h. As metas são alternativas a validar e aprovar mediante BIA.</p><h3>COMO LER OS BOARDS</h3><p>As zonas exibem dependências e fluxos. Os controles “antes” correspondem ao diagnóstico/projeto original. O “depois” mostra o refinamento, com verificações de auditoria em cada componente.</p></div></aside></>}
  </div>
 }
-createRoot(document.getElementById('root')).render(<App/>)
+createRoot(document.getElementById('root')).render(<Studio/>)
