@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { Activity, ArrowDownRight, ArrowLeftRight, ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Clock3, Cloud, Database, Download, FileCheck2, Fingerprint, GitBranch, HardDrive, Info, KeyRound, Layers3, LockKeyhole, Maximize2, Menu, MonitorCheck, Network, Play, RotateCcw, Search, Server, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Wifi, X, Zap } from 'lucide-react'
 import { expandBoards } from './boardEnhancements'
+import { diagramFor, routeLinks, CARD_WIDTH, CARD_HEIGHT } from './cleanDiagrams'
 import { Users, Thermometer, CloudUpload, ChartNoAxesCombined, Radar, ClipboardCheck, Tags, Workflow, AlertTriangle, Gauge, ListChecks, FileWarning, FilePlus, RefreshCw, UserX, GitFork, Bot, ScrollText, Siren, CalendarClock, HardDriveDownload, BellRing, ScanSearch, Boxes, Timer, EyeOff, CalendarRange, MessageSquareText, Trash2, Landmark, GraduationCap } from 'lucide-react'
 import './styles.css'
 
@@ -63,50 +64,50 @@ const stateLabels={before:'ESTRUTURA ORIGINAL',after:'REENGENHARIA PROPOSTA'}
 const riskOrder={critical:0,high:1,medium:2}
 function ComponentNode({data,selected}){
  const Icon=ICONS[data.item.icon]||Shield
- return <div className={'element '+(data.after?'element-after':'element-before')+(selected?' element-selected':'')} title={data.item.problem} role="button" tabIndex={0} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
-  <Handle className="port port-in" type="target" position={Position.Left}/>
-  <div className="element-head"><span className="element-symbol"><Icon size={17} strokeWidth={1.75}/></span><span className={'severity severity-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
-  <div className="element-title">{data.item.label}</div>
+ return <div className={'clean-card '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} title={data.item.problem} tabIndex={0} role="button" aria-label={data.item.label} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
+  <div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
+  <strong>{data.item.label}</strong>
   <p>{data.after?data.item.after:data.item.before}</p>
-  <div className="element-foot"><span>{data.after?'CONTROLE REFINADO':'PONTO DE PARTIDA'}</span><ArrowRight size={12}/></div>
-  <Handle className="port port-out" type="source" position={Position.Right}/>
  </div>
 }
-function ZoneNode({data}){
- return <div className="zone" style={{height:data.height}}>
-  <div className="zone-head"><span className="zone-number">{String(data.index+1).padStart(2,'0')}</span><div><strong>{data.title}</strong><p>{data.subtitle}</p></div><span className="zone-count">{data.count} ATIVOS</span></div>
- </div>
+function FlowingEdge({id,data}){
+ const points=data.points
+ const path=points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')
+ const stroke=data.after?'#93aee1':'#baa4ab'
+ return <g className="diagram-connection" data-animation="flow" data-testid="animated-connection">
+  <defs><marker id={'head-'+id} viewBox="0 0 8 8" markerWidth="6" markerHeight="6" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 Z" fill={stroke}/></marker></defs>
+  <path d={path} fill="none" stroke={stroke} strokeWidth="1.8" strokeOpacity=".65" strokeLinejoin="round" markerEnd={'url(#head-'+id+')'}/>
+  <path d={path} fill="none" stroke={stroke} strokeWidth="2.7" strokeOpacity=".6" strokeDasharray="3 16" className="flow-trace" strokeLinejoin="round"/>
+  <circle r="3.1" fill={stroke} opacity=".95">
+    <animateMotion dur={String(3.1+data.index*.13)+'s'} repeatCount="indefinite" path={path} rotate="auto"/>
+  </circle>
+ </g>
 }
-const nodeTypes={component:ComponentNode,zone:ZoneNode}
-function Diagram({board,phase,selected,onInspect,onReady}){
+const nodeTypes={component:ComponentNode}
+const edgeTypes={flow:FlowingEdge}
+function Diagram({board,phase,selected,onInspect}){
  const flow=useReactFlow()
  const after=phase==='after'
  const {nodes,edges}=useMemo(()=>{
-   const ordered=board.zones.map((_,zone)=>board.nodes.filter(n=>n.zone===zone))
-   const height=Math.max(690,...ordered.map(group=>160+group.length*142))
-   const zones=board.zones.map(([title,subtitle],i)=>({
-     id:'zone-'+i,type:'zone',position:{x:30+i*358,y:24},draggable:false,selectable:false,connectable:false,zIndex:-10,
-     data:{index:i,title,subtitle,count:ordered[i].length,height},style:{width:346,height},focusable:false
-   }))
-   const parts=ordered.flatMap((group,zone)=>group.map((item,row)=>({
-     id:item.id,type:'component',position:{x:56+zone*358,y:137+row*142},draggable:false,connectable:false,selected:selected?.id===item.id,
-     data:{item,after,inspect:onInspect}
-   })))
-   const ids=new Set(board.nodes.map(n=>n.id))
-   const connections=board.edges.filter(([source,target])=>ids.has(source)&&ids.has(target)).map(([source,target,label],i)=>({
-     id:'link-'+i,source,target,type:'smoothstep',animated:after,selectable:false,zIndex:1,
-     label:label||undefined,labelStyle:{fill:'#91a2ba',fontSize:9,fontFamily:'IBM Plex Mono'},
-     labelBgPadding:[5,3],labelBgBorderRadius:4,labelBgStyle:{fill:'#161b24',fillOpacity:.92},
-     style:{stroke:after?'#667ba9':'#6e6268',strokeWidth:after?1.65:1.35,opacity:.72},
-     markerEnd:{type:MarkerType.ArrowClosed,color:after?'#7a94ca':'#82717b',width:13,height:13}
-   }))
-   return {nodes:[...zones,...parts],edges:connections}
+  const diagram=diagramFor(board)
+  const nodes=diagram.nodes.map(({item,x,y})=>({
+   id:item.id,type:'component',position:{x,y},style:{width:CARD_WIDTH,height:CARD_HEIGHT},
+   data:{item,after,inspect:onInspect},selected:selected?.id===item.id,draggable:false,connectable:false
+  }))
+  const connections=routeLinks(diagram).map((edge,index)=>({
+   id:edge.id,source:edge.source,target:edge.target,type:'flow',
+   data:{...edge,after,index},selectable:false,animated:false
+  }))
+  return {nodes,edges:connections}
  },[board,after,selected,onInspect])
- useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.065,maxZoom:.98,duration:500}),160);return()=>clearTimeout(t)},[board.id,phase,flow])
- return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{padding:.065}} minZoom={.25} maxZoom={1.7} nodesDraggable={false} nodesConnectable={false} elementsSelectable={true} onNodeClick={(_,node)=>{if(node.type==='component')onInspect(node.data.item)}} onInit={onReady} colorMode="dark">
-   <Background variant="dots" color="#343b4a" gap={23} size={1}/>
-   <Controls showInteractive={false} position="bottom-left"/>
- </ReactFlow>
+ useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.09,maxZoom:1.12,duration:420}),90);return()=>clearTimeout(t)},[board.id,phase,flow])
+ return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+  fitView fitViewOptions={{padding:.09}} minZoom={.28} maxZoom={1.8}
+  nodesDraggable={false} nodesConnectable={false} elementsSelectable={true}
+  onNodeClick={(_,node)=>onInspect(node.data.item)} colorMode="dark">
+    <Background variant="dots" color="#343b4a" gap={24} size={1}/>
+    <Controls showInteractive={false} position="bottom-left"/>
+  </ReactFlow>
 }
 function DiagramBoard(props){return <ReactFlowProvider><Diagram {...props}/></ReactFlowProvider>}
 function Inspector({item,board,onClose}){
@@ -117,7 +118,7 @@ function Inspector({item,board,onClose}){
    <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>{riskLabels[item.risk]}</div>
    <h2>{item.label}</h2><p className="inspect-subtitle">{board.title} / estudo de caso DeliMarket</p>
    <div className="delta"><div><span>ANTES</span><p>{item.before}</p></div><ArrowRight size={20}/><div><span>DEPOIS</span><p>{item.after}</p></div></div>
-   {[['01 / PROBLEMA IDENTIFICADO',item.problem],['02 / DEFINIÇÃO DE REENGENHARIA',item.solution],['03 / VALOR PARA A DELIMARKET',item.value],['04 / EVIDÊNCIA DE AUDITORIA',item.evidence],['05 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
+   {[['01 / PROBLEMA IDENTIFICADO',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
    <div className="inspect-note">Os estados representam o diagnóstico e a proposta de evolução. A aplicação não afirma que os controles já foram implantados.</div>
   </div>
  </aside></>
@@ -153,7 +154,8 @@ function Studio(){
   }catch(error){console.error('Exportação falhou',error);alert('Não foi possível exportar o PDF. Verifique o console e tente novamente.')}
   finally{setExporting(false)}
  }
- const totals={nodes:board.nodes.length,connections:board.edges.length,critical:board.nodes.filter(n=>n.risk==='critical').length}
+ const diagram=diagramFor(board)
+ const totals={nodes:diagram.nodes.length,connections:diagram.links.length,critical:diagram.nodes.filter(n=>n.item.risk==='critical').length}
  return <div className="studio">
    <header className="app-header">
     <div className="identity"><span className="identity-symbol"><Shield size={17}/></span><strong>DELIMARKET</strong><span className="identity-divider"/><span>SECURITY STUDIO</span></div>
