@@ -34,11 +34,12 @@ test('renders dense bottom-tab boards, comparison, inspector and PDF', async ({ 
 
 test('connections are routed without cards and animate along paths', async ({page}) => {
  await page.goto('/')
+ await expect.poll(async()=>page.locator('.diagram-connection').count()).toBeGreaterThan(5)
  const metrics=await page.evaluate(()=>{
   const cards=[...document.querySelectorAll('.react-flow__node-component')].map(el=>{
    const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}
   })
-  const edges=[...document.querySelectorAll('.diagram-connection path:first-of-type')]
+  const edges=[...document.querySelectorAll('.diagram-connection > path')].filter(el=>el.getAttribute('stroke-dasharray')===null)
   const sample=edges.flatMap(edge=>{
    const n=edge.getTotalLength(),points=[]
    for(let i=0;i<=25;i++){const p=edge.getPointAtLength(n*i/25);const matrix=edge.getScreenCTM();if(!matrix)continue;const v=new DOMPoint(p.x,p.y).matrixTransform(matrix);points.push(v)}
