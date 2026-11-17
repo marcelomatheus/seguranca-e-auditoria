@@ -73,21 +73,21 @@ test('infraestrutura compara o projeto híbrido anterior com a reengenharia, sem
  await page.getByRole('tab',{name:/Infraestrutura/i}).click()
  await page.getByRole('button',{name:'Antes',exact:true}).click()
  await expect(page.getByText('PROJETO ANTERIOR · ARQUITETURA HÍBRIDA')).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'ERP em cluster no site primário'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'2 ISPs + SD-WAN/VPN'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'2 circuitos + nobreak + gerador'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'BD primário HA + réplica de DR'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'Backup em nuvem imutável, criptografado e versionado'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'Firewall / WAF · MFA · menor privilégio'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'BI e dashboards na nuvem'})).toBeVisible()
- await page.locator('.clean-card').filter({hasText:'ERP em cluster no site primário'}).click()
+ await expect(page.locator('.clean-card').filter({hasText:'ERP em cluster local e standby morno em nuvem'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Dois ISPs com SD-WAN/VPN e rotas alternativas'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Dois circuitos, nobreak, gerador e teste em carga'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'HA local + réplica assíncrona e failover assistido'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Backup imutável e cifrado em outra região, KMS/HSM'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Firewall, WAF, MFA e segmentação previstos'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Warehouse na nuvem, painel de crise e ETL resiliente'})).toBeVisible()
+ await page.locator('.clean-card').filter({hasText:'ERP em cluster local e standby morno em nuvem'}).click()
  await expect(page.getByText('01 / LACUNA DO PROJETO ANTERIOR')).toBeVisible()
- await expect(page.getByText('O trabalho anterior já propõe ERP em cluster e ERP standby em nuvem.',{exact:false})).toBeVisible()
+ await expect(page.getByText('O cluster local e o standby na nuvem já são propostos.',{exact:false})).toBeVisible()
  await expect(page.getByText('02 / SOLUÇÃO PROPOSTA')).toBeVisible()
  await page.getByRole('button',{name:'Fechar detalhes'}).click()
  await page.getByRole('button',{name:'Depois',exact:true}).click()
- await expect(page.locator('.clean-card').filter({hasText:'Cluster com failover comprovado'})).toBeVisible()
- await expect(page.locator('.clean-card').filter({hasText:'Energia redundante supervisionada'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Eliminar falhas comuns do serviço ERP'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'Eliminar dependências comuns da alimentação'})).toBeVisible()
 })
 
 test('seis seções usam o plano acadêmico anterior como referência', async ({page}) => {
@@ -165,4 +165,28 @@ test('home possui rolagem vertical independente mantendo tabs inferiores', async
  await pageArea.evaluate(el=>el.scrollTo(0,el.scrollHeight))
  await expect(page.getByRole('tab',{name:/Visão geral/})).toBeVisible()
  await expect(page.getByRole('button',{name:/Abrir primeiro diagrama/})).toBeVisible()
+})
+
+test('infraestrutura expõe riscos sistêmicos e reconhece a medição de RPO e RTO já prevista', async ({page})=>{
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ await page.getByRole('button',{name:'Antes',exact:true}).click()
+ await expect(page.locator('.clean-card').filter({hasText:'Perfis, MFA e serviços de apoio com RTO de 2h'})).toBeVisible()
+ await expect(page.locator('.clean-card').filter({hasText:'DR com standby, failover assistido, failback e RPO/RTO medidos'})).toBeVisible()
+ await page.getByRole('button',{name:'Depois',exact:true}).click()
+ for(const text of [
+   'Identidade/DNS/VPN recuperáveis antes do ERP',
+   'Fencing e integridade transacional no failover',
+   'Eliminar falhas comuns da conectividade',
+   'Eliminar dependências comuns da alimentação',
+   'Recuperar a cadeia completa do serviço'
+ ]){
+  await expect(page.locator('.clean-card').filter({hasText:text})).toBeVisible()
+ }
+ await page.locator('.clean-card').filter({hasText:'Dependências e reversão seguras no DR'}).click()
+ await expect(page.getByText('01 / LACUNA DO PROJETO ANTERIOR')).toBeVisible()
+ await expect(page.getByText(/ERP com RTO de 1 hora/)).toBeVisible()
+ await expect(page.getByText(/A medição de RPO\/RTO que o plano já previa/)).toHaveCount(0)
+ await expect(page.getByText(/Preservar a medição de RPO\/RTO que o plano já previa/)).toBeVisible()
+ await expect(page.getByText(/GRAVIDADE DA INTERVENÇÃO · CRÍTICA/)).toBeVisible()
 })
