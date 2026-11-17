@@ -4,8 +4,9 @@ test('renders dense bottom-tab boards, comparison, inspector and PDF', async ({ 
  const errors=[]
  page.on('pageerror', error=>errors.push(error.message))
  await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
  await expect(page.getByRole('heading',{name:/Arquitetura & continuidade/})).toBeVisible()
- await expect(page.getByRole('tab')).toHaveCount(7)
+ await expect(page.getByRole('tab')).toHaveCount(8)
  const tabs=['Infraestrutura','Matriz de risco','Identidade e acesso','Recuperação','Governança de dados','Políticas & controles','Plano de execução']
  for(const label of tabs){
   await page.getByRole('tab',{name:new RegExp(label,'i')}).click()
@@ -34,6 +35,7 @@ test('renders dense bottom-tab boards, comparison, inspector and PDF', async ({ 
 
 test('connections are routed without cards and animate along paths', async ({page}) => {
  await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
  await expect.poll(async()=>page.locator('.diagram-connection').count()).toBeGreaterThan(5)
  const metrics=await page.evaluate(()=>{
   const cards=[...document.querySelectorAll('.react-flow__node-component')].map(el=>{
@@ -55,6 +57,7 @@ test('connections are routed without cards and animate along paths', async ({pag
 
 test('canvas fills viewport above spreadsheet-style bottom tabs', async ({ page }) => {
  await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
  const viewport=page.viewportSize()
  const rect=await page.locator('.canvas-stage').boundingBox()
  expect(rect.height).toBeGreaterThan(viewport.height*.55)
@@ -127,4 +130,39 @@ test('cada card mostra uma única gravidade por cor em todas as seções', async
   const colored=await page.locator('.clean-card').first().evaluate(el=>getComputedStyle(el,'::before').backgroundColor)
   expect(colored).not.toBe('rgba(0, 0, 0, 0)')
  }
+})
+
+
+test('home apresenta resumo macro e permite navegar para todos os sete diagramas', async ({page}) => {
+ const errors=[]
+ page.on('pageerror',error=>errors.push(error.message))
+ await page.goto('/')
+ await expect(page.getByRole('main',{name:'Visão geral da reengenharia'})).toBeVisible()
+ await expect(page.getByRole('heading',{name:/Da arquitetura proposta à segurança verificável/})).toBeVisible()
+ await expect(page.getByRole('tab')).toHaveCount(8)
+ await expect(page.getByRole('tab',{name:/Visão geral/})).toHaveAttribute('aria-selected','true')
+ await expect(page.getByText('O projeto anterior já tinha uma base sólida.')).toBeVisible()
+ await expect(page.locator('.overview-workstream')).toHaveCount(7)
+ await expect(page.getByText('Problemas identificados.',{exact:false})).toBeVisible()
+ await expect(page.getByText('Menos suposições.',{exact:false})).toBeVisible()
+ await page.getByRole('button',{name:/Explorar diagramas/}).click()
+ await expect(page.getByRole('heading',{name:/Arquitetura & continuidade/})).toBeVisible()
+ await page.getByRole('tab',{name:/Visão geral/}).click()
+ await page.locator('.overview-workstream').filter({hasText:'Dados e LGPD'}).click()
+ await expect(page.getByRole('heading',{name:/Ciclo de vida/})).toBeVisible()
+ await page.getByRole('tab',{name:/Visão geral/}).click()
+ await page.getByRole('button',{name:/Fontes e premissas/}).click()
+ await expect(page.getByText('FONTES E PREMISSAS')).toBeVisible()
+ expect(errors).toEqual([])
+})
+
+test('home possui rolagem vertical independente mantendo tabs inferiores', async ({page})=>{
+ await page.goto('/')
+ const pageArea=page.locator('.overview-page')
+ await expect(pageArea).toBeVisible()
+ const before=await pageArea.evaluate(el=>({height:el.clientHeight,scroll:el.scrollHeight}))
+ expect(before.scroll).toBeGreaterThan(before.height)
+ await pageArea.evaluate(el=>el.scrollTo(0,el.scrollHeight))
+ await expect(page.getByRole('tab',{name:/Visão geral/})).toBeVisible()
+ await expect(page.getByRole('button',{name:/Abrir primeiro diagrama/})).toBeVisible()
 })
