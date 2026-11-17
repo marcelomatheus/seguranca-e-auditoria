@@ -20,3 +20,19 @@
 .flow-trace{animation:directional-flow 2.1s linear infinite}
 @keyframes directional-flow{to{stroke-dashoffset:-38}}
 @media(prefers-reduced-motion:reduce){.flow-trace{animation:none} .diagram-connection animateMotion{display:none}}
+
+/* Prioridade visual da intervenção: crítica, alta e moderada. */
+.clean-card{position:relative;overflow:hidden}
+.clean-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:8px 0 0 8px;background:var(--severity-color)}
+.clean-card-severity-critical{--severity-color:#e86b73;border-left-color:#e86b73}
+.clean-card-severity-high{--severity-color:#e4aa55;border-left-color:#e4aa55}
+.clean-card-severity-medium{--severity-color:#82a8e4;border-left-color:#82a8e4}
+.clean-risk{border-radius:4px;padding:4px 7px;font-size:8px;font-weight:700;letter-spacing:.075em;border:1px solid transparent}
+.clean-risk-critical{color:#ffb6bb;background:#4c252d;border-color:#ad505c}
+.clean-risk-high{color:#ffd19a;background:#463626;border-color:#ac7940}
+.clean-risk-medium{color:#bbd4ff;background:#263858;border-color:#547db8}
+.canvas-legend{gap:12px;flex-wrap:wrap}
+.canvas-legend strong{font:8px 'IBM Plex Mono',monospace;color:#a1adc3;letter-spacing:.065em;padding-right:4px}
+.canvas-legend .severity-key{width:9px;height:9px;border-radius:3px}
+.severity-key-critical{background:#e86b73}.severity-key-high{background:#e4aa55}.severity-key-medium{background:#82a8e4}
+@media(max-width:700px){.canvas-legend strong{display:none}.canvas-legend{gap:8px}}
