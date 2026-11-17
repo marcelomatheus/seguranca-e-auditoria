@@ -10,6 +10,7 @@ import { refineInfrastructureComparison } from './infrastructureRefinement'
 import { refineRemainingBoards } from './remainingBoardsRefinement'
 import { diagramFor, routeLinks, CARD_WIDTH, CARD_HEIGHT } from './cleanDiagrams'
 import { Users, Thermometer, CloudUpload, ChartNoAxesCombined, Radar, ClipboardCheck, Tags, Workflow, AlertTriangle, Gauge, ListChecks, FileWarning, FilePlus, RefreshCw, UserX, GitFork, Bot, ScrollText, Siren, CalendarClock, HardDriveDownload, BellRing, ScanSearch, Boxes, Timer, EyeOff, CalendarRange, MessageSquareText, Trash2, Landmark, GraduationCap } from 'lucide-react'
+import Overview from './Overview'
 import './styles.css'
 
 const ICONS = { Activity, BookOpen, CircleAlert, Clock3, Cloud, Database, FileCheck2, Fingerprint, GitBranch, HardDrive, KeyRound, Layers3, LockKeyhole, MonitorCheck, Network, RotateCcw, Server, Shield, ShieldAlert, ShieldCheck, Wifi, Zap, Settings2 }
@@ -126,7 +127,7 @@ function Inspector({item,board,onClose}){
  </aside></>
 }
 function Studio(){
- const [active,setActive]=useState('architecture')
+ const [active,setActive]=useState('overview')
  const [phase,setPhase]=useState('after')
  const [compare,setCompare]=useState(false)
  const [selected,setSelected]=useState(null)
@@ -135,9 +136,10 @@ function Studio(){
  const [showTabs,setShowTabs]=useState(true)
  const [showHelp,setShowHelp]=useState(false)
  const boardRef=useRef(null)
+ const isOverview=active==='overview'
  const board=BOARDS.find(x=>x.id===active)||BOARDS[0]
  const onInspect=useCallback(item=>setSelected(item),[])
- const pickBoard=id=>{setActive(id);setSelected(null)}
+ const pickBoard=id=>{setActive(id);setSelected(null);setCompare(false);setPhase('after')}
  const chooseMode=mode=>{setCompare(mode==='compare');if(mode!=='compare')setPhase(mode);setSelected(null)}
  const mode=compare?'compare':phase
  const originalCaption=board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':stateLabels.before
@@ -162,10 +164,10 @@ function Studio(){
  return <div className="studio">
    <header className="app-header">
     <div className="identity"><span className="identity-symbol"><Shield size={17}/></span><strong>DELIMARKET</strong><span className="identity-divider"/><span>SECURITY STUDIO</span></div>
-    <div className="header-middle"><span className="breadcrumb">REENGENHARIA /</span><span>{board.num} — {board.short}</span></div>
-    <div className="header-actions"><button className="header-button" onClick={()=>setSources(true)}><BookOpen size={15}/><span>Referências</span></button><button className="header-button export" onClick={exportPdf} disabled={exporting}><Download size={15}/><span>{exporting?'Exportando...':'Exportar PDF'}</span></button></div>
+    <div className="header-middle"><span className="breadcrumb">REENGENHARIA /</span><span>{isOverview?'VISÃO GERAL':board.num+' — '+board.short}</span></div>
+    <div className="header-actions"><button className="header-button" onClick={()=>setSources(true)}><BookOpen size={15}/><span>Referências</span></button>{!isOverview&&<button className="header-button export" onClick={exportPdf} disabled={exporting}><Download size={15}/><span>{exporting?'Exportando...':'Exportar PDF'}</span></button>}</div>
    </header>
-   <div className="board-topbar">
+   {isOverview?<Overview onOpenBoard={pickBoard} onOpenReferences={()=>setSources(true)}/>:<><div className="board-topbar">
     <div className="board-identity"><div className="board-index">{board.num}</div><div className="board-name"><h1>{board.title}</h1><p>{board.intro}</p></div></div>
     <div className="board-actions">
      <span className="board-stat">{totals.nodes} <small>COMPONENTES</small></span><span className="board-stat">{totals.connections} <small>CONEXÕES</small></span>
@@ -177,9 +179,10 @@ function Studio(){
     <div className="canvas-legend" aria-label="Gravidade das intervenções"><strong>GRAVIDADE DA INTERVENÇÃO</strong><span><i className="severity-key severity-key-critical"/> CRÍTICA</span><span><i className="severity-key severity-key-high"/> ALTA</span><span><i className="severity-key severity-key-medium"/> MODERADA</span></div>
     <div className="canvas-guidance"><button onClick={()=>setShowHelp(!showHelp)} title="Instruções"><Info size={15}/></button>{showHelp&&<span>Arraste para navegar · Scroll para ampliar · Clique no componente para analisar · Use “Comparar” para visualizar a evolução</span>}</div>
    </main>
+   </>}
    <footer className="sheetbar">
     <div className="sheetbar-label"><Layers3 size={16}/><span>BOARDS</span></div>
-    <div className="sheet-tabs" role="tablist" aria-label="Diagramas de segurança">{BOARDS.map(item=>{const Icon=ICONS[item.icon]||Shield;return <button role="tab" aria-selected={active===item.id} key={item.id} className={'sheet-tab '+(active===item.id?'sheet-tab-active':'')} onClick={()=>pickBoard(item.id)} title={item.title}><Icon size={15}/><span>{item.short}</span><small>{item.num}</small></button>})}</div>
+    <div className="sheet-tabs" role="tablist" aria-label="Diagramas de segurança"><button role="tab" aria-selected={isOverview} className={'sheet-tab '+(isOverview?'sheet-tab-active':'')} onClick={()=>pickBoard('overview')} title="Visão geral"><Layers3 size={15}/><span>Visão geral</span><small>00</small></button>{BOARDS.map(item=>{const Icon=ICONS[item.icon]||Shield;return <button role="tab" aria-selected={active===item.id} key={item.id} className={'sheet-tab '+(active===item.id?'sheet-tab-active':'')} onClick={()=>pickBoard(item.id)} title={item.title}><Icon size={15}/><span>{item.short}</span><small>{item.num}</small></button>})}</div>
     <div className="sheet-right"><span><span className="status-dot"/> VISÃO CONCEITUAL</span></div>
    </footer>
    {selected&&<Inspector item={selected} board={board} onClose={()=>setSelected(null)}/>}
