@@ -116,6 +116,35 @@ const proposals = {
  }
 }
 
+
+const supplemental = {
+ assets:{
+  appetite:['Limites de tolerância a riscos ainda como premissas','Apetite aprovado por risco e processo','A priorização já consta da matriz do projeto anterior, mas os critérios de risco tolerável não foram homologados pela direção.','Documentar limites de aceitação, instância de aprovação e exceções para cada classe de risco.'],
+  findings:['Auditoria e ações corretivas previstas','Achados rastreados até reteste','O plano anterior prevê auditorias e correção de falhas, sem um registro único de apontamentos, datas e retestes.','Vincular achado, proprietário, prazo, evidência da correção e resultado da reverificação.']
+ },
+ identity:{
+  passwordhealth:['MFA e proteção de credenciais propostas','Senhas comprometidas bloqueadas','O projeto anterior define MFA, porém não especifica verificação contra senhas vazadas e tentativas automatizadas.','Aplicar lista de senhas comprometidas, limitação de tentativas e monitoramento de abuso em autenticação.'],
+  breakglass:['Resposta a incidentes e acesso administrativo previstos','Acesso emergencial com custódia','A proposta anterior prevê resposta e proteção administrativa; não descreve um procedimento de acesso emergencial controlado.','Definir conta break-glass, aprovadores, expiração, armazenamento e revisão do uso depois do incidente.']
+ },
+ restore:{
+  apps:['Retomada do ERP, ETL e BI em sequência prevista','Subida de serviços com healthchecks','O diagrama anterior já determina a retomada de ERP, ETL e BI, mas não formaliza pré-requisitos técnicos ou testes por serviço.','Detalhar ordem de subida, critérios de saúde, reconexão do ETL, avaliação do BI e aprovação para liberar usuários.'],
+  lessons:['Testes e correção das falhas já previstos','Registro de causa e teste de eficácia','O documento anterior exige que falhas de teste gerem ações corretivas; falta comprovação uniforme de eficácia após o encerramento.','Vincular causa-raiz, responsável, prazo, evidência de correção e reteste do cenário.']
+ },
+ lifecycle:{
+  requests:['Direitos de acesso, correção e exclusão previstos','Atendimento rastreável a titulares','O projeto anterior contempla direitos do titular e recomenda canal de atendimento, sem detalhar acompanhamento e validação de cada solicitação.','Criar workflow de identificação, análise de direito, resposta e guarda dos registros de atendimento.'],
+  incident:['Notificação e resposta LGPD previstas','Decisão de comunicação registrada','O projeto anterior cita comunicação à ANPD e titulares quando aplicável, mas não explicita os responsáveis pelo parecer e sua evidência.','Documentar avaliação de risco/dano, participação do jurídico/encarregado, prazo e decisão de comunicar ou não.']
+ },
+ policy:{
+  indicators:['Indicadores mensais de backup, acesso e continuidade','KRIs com ação e evidência','O plano anterior já define metas quantitativas e relatórios à direção; é necessário ligar desvios a decisões, alertas e ações verificáveis.','Para cada indicador, registrar origem, limite, responsável, escalonamento, ação e verificação de resultado.'],
+  auditplan:['Diagnóstico ISO, auditoria e revisão previstos','Plano auditável com amostras e retestes','A proposta anterior já prevê auditoria e diagnóstico de lacunas ISO; não organiza um plano de testes com amostragem, evidência e follow-up.','Estabelecer calendário, teste por controle, método de amostragem, tratamento de não conformidades e reteste.']
+ },
+ roadmap:{
+  bi:['ETL independente e painel de crise já previstos','BI de contingência homologado','O cronograma anterior já inclui ETL, warehouse, conciliação e painel de crise; falta registrar aceitação operacional e ensaios da recuperação.','Validar cargas sem duplicação, tempo de atualização e disponibilidade do painel com ERP em failover.'],
+  bia:['BIA e RPO/RTO previstos no plano','Metas homologadas pela direção','A BIA já é atividade prevista, mas os dois documentos usam metas diferentes e não comprovam aprovação do negócio.','Formalizar decisão por criticidade, custo, RPO e RTO com medição em testes.'],
+  people:['Treinamento e simulação anual previstos','Capacitação com avaliação de eficácia','O cronograma anterior prevê treinamento e simulações para TI e logística; falta medição de desempenho por função.','Avaliar exercícios de crise, registrar presença, pontos de falha e capacitação corretiva.'],
+  report:['Relatório mensal à direção e indicadores previstos','Revisão de KRIs com decisões registradas','O projeto anterior já solicita acompanhamento por indicadores e relatórios; falta trilha da aprovação das ações.','Registrar responsáveis pelas decisões, deliberações, risco residual e prazo para validar medidas.']
+ }
+}
 const byId = Object.fromEntries(Object.entries(proposals).map(([id, data]) => [
  id, {intro:data.intro, baseline:data.baseline, entries:Object.fromEntries(data.entries.map(([nodeId,before,after,problem,solution])=>[
    nodeId,{before,after,problem,solution}
@@ -129,6 +158,11 @@ export function refineRemainingBoards(board){
   ...board,
   intro:specification.intro,
   baseline:specification.baseline,
-  nodes:board.nodes.map(node=>({...node,...specification.entries[node.id]}))
+  nodes:board.nodes.map(node=>{
+    const s=supplemental[board.id]?.[node.id]
+    const correction=specification.entries[node.id] || (s&&{before:s[0],after:s[1],problem:s[2],solution:s[3]})
+    if(!correction)throw new Error('Ausência de revisão do componente: '+board.id+'/'+node.id)
+    return {...node,...correction}
+  })
  }
 }
