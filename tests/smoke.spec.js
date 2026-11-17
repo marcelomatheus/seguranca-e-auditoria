@@ -190,3 +190,32 @@ test('infraestrutura expõe riscos sistêmicos e reconhece a medição de RPO e 
  await expect(page.getByText(/Preservar a medição de RPO\/RTO que o plano já previa/)).toBeVisible()
  await expect(page.getByText(/GRAVIDADE DA INTERVENÇÃO · CRÍTICA/)).toBeVisible()
 })
+
+
+test('inicialização cobre todos os nós da infraestrutura sem exceções', async ({page})=>{
+ const errors=[]
+ page.on('pageerror',e=>errors.push(e.message))
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ await expect(page.locator('.clean-card')).toHaveCount(12)
+ await page.getByRole('button',{name:'Antes',exact:true}).click()
+ await expect(page.locator('.clean-card')).toHaveCount(12)
+ await page.getByRole('button',{name:'Depois',exact:true}).click()
+ await expect(page.locator('.clean-card')).toHaveCount(12)
+ const labels=['Rede corporativa','Data warehouse','Detecção e resposta','BIA e continuidade','Criptografia e chaves']
+ const { ENHANCEMENTS }=await import('../src/boardEnhancements.js')
+ const { refineInfrastructureComparison }=await import('../src/infrastructureRefinement.js')
+ const extras=ENHANCEMENTS.architecture.extra.map(([id,,label])=>({id,label,problem:'test',solution:'test'}))
+ const base=Object.keys(ENHANCEMENTS.architecture.existing).map(id=>({id,label:id}))
+ const all=refineInfrastructureComparison({id:'architecture',nodes:[...base,...extras]})
+ expect(all.nodes).toHaveLength(base.length+extras.length)
+ for(const node of all.nodes){
+  expect(node.before).toBeTruthy()
+  expect(node.after).toBeTruthy()
+  expect(node.problem).toBeTruthy()
+  expect(node.solution).toBeTruthy()
+  expect(node.evidence).toBeTruthy()
+ }
+ for(const label of labels)expect(all.nodes.some(node=>node.label===label)).toBe(true)
+ expect(errors).toEqual([])
+})
