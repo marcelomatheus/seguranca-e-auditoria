@@ -103,6 +103,52 @@ const infrastructureChanges = {
     evidence: 'BIA coerente entre dependências, testes de partição/fencing, ensaio integrado de failover e failback com conciliação.',
     risk: 'critical'
   },
+
+  lan: {
+    before: 'Rede corporativa segmentada com SD-WAN/VPN',
+    after: 'Acesso ao DR sem falhas comuns de rede',
+    problem: 'A arquitetura anterior já prevê segmentação, dois ISPs e SD-WAN/VPN. O risco a verificar é a concentração do roteamento, DNS, VPN ou equipamentos de borda em um elemento que também seja necessário durante o failover.',
+    solution: 'Mapear os pontos compartilhados entre matriz, CD, filiais e site de DR; prever acesso seguro ao ambiente alternativo mesmo quando a infraestrutura central de rede estiver indisponível.',
+    value: 'Reduz a probabilidade de a recuperação em nuvem ser inacessível por uma falha na rede corporativa.',
+    evidence: 'Topologia ponta a ponta, teste de perda do concentrador principal e acesso funcional ao DR.',
+    risk: 'critical'
+  },
+  warehouse: {
+    before: 'Data warehouse desacoplado do ERP',
+    after: 'Repositório analítico acessível durante contingência',
+    problem: 'O projeto anterior já separa o warehouse do banco transacional e prevê cópia em nuvem. É necessário verificar se a disponibilidade do repositório também depende de autenticação, rede ou serviços exclusivos do site principal.',
+    solution: 'Verificar a continuidade de acesso e das permissões do warehouse no cenário de perda total do site primário, preservando a segregação de dados pessoais e o último estado íntegro.',
+    value: 'Mantém a capacidade analítica necessária à logística e à direção sem afetar o ERP.',
+    evidence: 'Teste de acesso a dados analíticos durante indisponibilidade do site e revisão das permissões.',
+    risk: 'high'
+  },
+  soc: {
+    before: 'Logs, EDR, alertas e monitoramento centralizados',
+    after: 'Resposta disponível durante perda do site ou identidade',
+    problem: 'O plano anterior já prevê logs protegidos, EDR, alertas e resposta a incidentes. Resta avaliar se o canal de monitoramento e o acionamento da equipe sobrevivem à falha do site ou à indisponibilidade da autenticação corporativa.',
+    solution: 'Manter caminhos independentes de coleta e notificação de incidentes críticos e acesso seguro ao histórico de alertas a partir do ambiente de contingência.',
+    value: 'A equipe consegue perceber e responder ao incidente mesmo quando a infraestrutura monitorada está indisponível.',
+    evidence: 'Teste de perda do coletor primário, registro de recebimento de alertas externos e acesso à trilha em contingência.',
+    risk: 'high'
+  },
+  bia: {
+    before: 'BIA, metas e medição de RPO/RTO já propostas',
+    after: 'RTO alinhado entre ERP e serviços de apoio',
+    problem: 'A seção 5.1 do plano detalhado propõe RTO de 1 hora para ERP e de 2 horas para autenticação, DNS, VPN e rede, apesar de os serviços de apoio serem dependências críticas para o ERP operar. O documento já previa medições reais de RPO/RTO em testes.',
+    solution: 'Rever a sequência de recuperação e estabelecer metas compatíveis para serviços de apoio e ERP, submetendo-as à aprovação da direção e à verificação em simulação integrada. Preservar as medições já propostas.',
+    value: 'Evita declarar o ERP recuperado quando os usuários ainda não conseguem operar pedidos, estoque e logística.',
+    evidence: 'BIA consistente por dependência e exercício integrado de recuperação com RTO fim a fim.',
+    risk: 'critical'
+  },
+  kms: {
+    before: 'TLS, AES-256, KMS/HSM e custódia dupla',
+    after: 'Chaves recuperáveis durante perda de identidade',
+    problem: 'O projeto anterior já exige criptografia, chaves separadas, KMS/HSM, rotação e custódia dupla. A lacuna a verificar é se essas chaves continuam acessíveis para restauração quando o IdP, a conta principal ou a VPN forem indisponibilizados.',
+    solution: 'Projetar e exercitar um procedimento de recuperação segura das chaves e acesso às cópias externas sem dependência exclusiva do site ou identidade primários.',
+    value: 'Evita que backups íntegros se tornem inutilizáveis durante um desastre.',
+    evidence: 'Ensaio de recuperação de chaves sem acesso ao ambiente principal e trilhas de custódia.',
+    risk: 'critical'
+  },
   immutable: {
     before: 'Backup imutável e cifrado em outra região, KMS/HSM',
     after: 'Recuperação resistente à perda da identidade',
