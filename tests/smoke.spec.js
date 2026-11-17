@@ -100,7 +100,7 @@ test('seis seções usam o plano acadêmico anterior como referência', async ({
   {tab:'Recuperação',before:'Regra 3-2-1 e imutabilidade propostas',after:'Proteção testada em laboratório'},
   {tab:'Governança de dados',before:'Coleta minimizada com finalidade e base legal',after:'Finalidade documentada por processo'},
   {tab:'Políticas & controles',before:'Política 3-2-1 e rotina de testes definida',after:'Procedimentos e aceite registrados'},
-  {tab:'Plano de execução',before:'Fase 3: DR, BI e failover na nuvem',after:'Resiliência demonstrada em ensaios'},
+  {tab:'Plano de execução',before:'Fase 3: DR, BI e failover medindo RPO/RTO',after:'Dependências e isolamento validados'},
  ]
  for(const item of cases){
   await page.getByRole('tab',{name:new RegExp(item.tab,'i')}).click()
