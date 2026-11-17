@@ -1,111 +1,129 @@
-// Referência do estado "Antes": diagrama 2 — Proposta (arquitetura híbrida)
-// do trabalho anterior, e não o diagnóstico da DeliMarket (diagrama 1).
-// As melhorias complementam controles já previstos; não comprovam implantação.
+// Baseline: previously proposed hybrid architecture (visual diagram 2 and detailed plan).
+// A "gap" means an unresolved or insufficiently specified architectural condition,
+// not a proven defect in deployed infrastructure. RPO/RTO measurement, failover
+// procedures, immutable backups, security segmentation and BI reconciliation are
+// ALREADY present in the previous proposal.
 const infrastructureChanges = {
   users: {
-    before: 'Áreas de negócio · acesso por perfil',
-    after: 'Acesso por perfil auditável',
-    problem: 'O projeto anterior já previa acesso por perfil e menor privilégio. Falta explicitar a matriz de permissões por área e o fluxo de aprovação/revisão.',
-    solution: 'Documentar perfis de vendas, estoque, logística, financeiro e TI; vincular concessões a responsáveis e realizar revisões registradas.',
-    value: 'Preserva o acesso por função já desenhado e amplia a rastreabilidade de concessões e alterações.',
-    evidence: 'Matriz RBAC, aprovações e revisões periódicas.'
+    before: 'Perfis, MFA e serviços de apoio com RTO de 2h',
+    after: 'Identidade/DNS/VPN recuperáveis antes do ERP',
+    problem: 'INCONSISTÊNCIA EXPLÍCITA: o documento detalhado prevê RTO de 1 hora para o ERP, mas 2 horas para autenticação, DNS, VPN e rede — serviços críticos para acessá-lo. Recuperar o ERP primeiro não significa restabelecer a operação do negócio.',
+    solution: 'Reordenar a BIA por dependências reais e alinhar as metas de identidade, DNS, VPN e rede à retomada do ERP. Definir e exercitar serviços de apoio disponíveis no site alternativo, com acesso de emergência controlado que não dependa exclusivamente do site primário.',
+    value: 'Evita que o ERP esteja tecnicamente ativo na nuvem enquanto filiais, CD e operadores continuem impossibilitados de utilizá-lo.',
+    evidence: 'BIA revisada, mapa das dependências e ensaio integrado de autenticação, DNS, VPN e ERP.',
+    risk: 'critical'
   },
   edge: {
-    before: 'Firewall / WAF · MFA · menor privilégio',
-    after: 'Regras revisadas + segmentação',
-    problem: 'O diagrama anterior já inclui firewall, WAF, MFA e menor privilégio. Não detalha a gestão de regras, a separação de zonas ou como provar a eficácia desses controles.',
-    solution: 'Inventariar regras, separar interfaces públicas e administrativas, revisar exceções e testar bloqueios de tráfego não autorizado.',
-    value: 'Reduz exposição e transforma a proteção de borda prevista em um controle verificável.',
-    evidence: 'Revisões de regras, logs de bloqueio e testes de segmentação.'
+    before: 'Firewall, WAF, MFA e segmentação previstos',
+    after: 'Isolamento da gestão e dos caminhos de DR',
+    problem: 'A proposta anterior já separa ERP, BI, backup e administração e prevê firewall, WAF e EDR. Ainda é necessário verificar se o plano de controle (VPN, identidade, políticas e credenciais administrativas) permanece funcional e isolado quando o site primário ou o domínio principal é comprometido.',
+    solution: 'Projetar caminhos de administração e acesso ao DR independentes de componentes exclusivos do site primário, validar regras entre segmentos e aplicar proteção aos acessos de gestão sem reproduzir o mesmo ponto único de falha na nuvem.',
+    value: 'Reduz a possibilidade de o ataque ou a indisponibilidade de um ambiente bloquear também a recuperação do outro.',
+    evidence: 'Matriz de fluxos de gestão/DR, revisão de dependências do IdP e teste de indisponibilidade do controle primário.',
+    risk: 'critical'
   },
   erp: {
-    before: 'ERP em cluster no site primário',
-    after: 'Cluster com failover comprovado',
-    problem: 'O trabalho anterior já propõe ERP em cluster e ERP standby em nuvem. Precisa definir procedimento de comutação, responsáveis e critérios de validação do serviço.',
-    solution: 'Formalizar runbook de failover/failback, testes com usuários-chave e verificação de pedidos, estoque e faturamento após a comutação.',
-    value: 'Converte a redundância proposta em capacidade de continuidade testável.',
-    evidence: 'Roteiro de teste, resultados de failover e RTO medido.'
+    before: 'ERP em cluster local e standby morno em nuvem',
+    after: 'Eliminar falhas comuns do serviço ERP',
+    problem: 'O cluster local e o standby na nuvem já são propostos. O plano não demonstra se balanceador, storage, DNS, autenticação e filas compartilham falhas capazes de interromper todas as instâncias de aplicação. Esse é um risco a verificar, não uma falha comprovada.',
+    solution: 'Mapear e retirar pontos únicos nos componentes compartilhados da cadeia de atendimento; garantir que o standby tenha configuração, certificados, dependências, capacidade de escala e conectividade suficientes para receber pedidos na região secundária.',
+    value: 'Evita que um cluster aparente alta disponibilidade enquanto uma dependência compartilhada derruba o serviço inteiro.',
+    evidence: 'Mapa de domínios de falha, inventário de dependências e teste de indisponibilidade do balanceador/storage/identidade.',
+    risk: 'critical'
   },
   bi: {
-    before: 'BI e dashboards na nuvem',
-    after: 'BI com atualização monitorada',
-    problem: 'O projeto anterior já prevê BI na nuvem e data warehouse. Falta explicitar como monitorar atraso e qualidade das informações durante contingências.',
-    solution: 'Definir SLA de atualização, mostrar o horário da última carga e testar disponibilidade dos indicadores durante falhas no ERP.',
-    value: 'A diretoria mantém indicadores confiáveis e sabe quando dados estão desatualizados.',
-    evidence: 'Painel de frescor dos dados, testes de continuidade e reconciliações.'
+    before: 'Warehouse na nuvem, painel de crise e ETL resiliente',
+    after: 'BI utilizável na perda da cadeia de acesso',
+    problem: 'O documento detalhado já prevê dados com horário da última carga, reconciliação e painel de crise. Resta verificar se gestores conseguem acessar esse painel quando a VPN, o DNS ou a autenticação do site primário não estiverem disponíveis.',
+    solution: 'Garantir um caminho de consulta ao painel de crise que opere na perda do site principal, preservando autorização e dados minimizados, e explicitar os níveis de operação quando a fonte ERP estiver indisponível.',
+    value: 'Permite que a direção consulte entregas, pedidos e estoque com indicação de defasagem durante uma crise ampla.',
+    evidence: 'Teste de acesso ao painel com o site primário isolado, controle de acesso e informação de frescor exibida.',
+    risk: 'high'
   },
   connectivity: {
-    before: '2 ISPs + SD-WAN/VPN',
-    after: 'Redundância de links testada',
-    problem: 'Dois provedores distintos e SD-WAN/VPN já constam da arquitetura anterior. O refinamento é demonstrar independência das rotas e comutação dentro de metas definidas.',
-    solution: 'Testar quedas de cada provedor, medir tempo de comutação, documentar rotas alternativas e revisar SLAs.',
-    value: 'A continuidade das filiais deixa de depender apenas de uma configuração não aferida.',
-    evidence: 'Relatórios de failover de links, disponibilidade e SLAs.'
+    before: 'Dois ISPs com SD-WAN/VPN e rotas alternativas',
+    after: 'Eliminar falhas comuns da conectividade',
+    problem: 'Dois provedores já estão previstos. Porém, dois links podem falhar juntos se dividirem entrada física, equipamento de borda, alimentação, roteamento ou concentrador VPN. O documento não comprova independência ponta a ponta desses elementos.',
+    solution: 'Projetar diversidade física e lógica até os pontos críticos: entradas, caminhos, energia, equipamentos SD-WAN/VPN e terminação no DR. Onde houver elemento único inevitável, explicitar o risco residual e prever alternativa de operação.',
+    value: 'Diminui o risco de uma única falha local ou de borda interromper simultaneamente os dois canais e o acesso ao DR.',
+    evidence: 'Topologia física e lógica validada, análise de componentes comuns e ensaio de perda do equipamento de borda.',
+    risk: 'critical'
   },
   power: {
-    before: '2 circuitos + nobreak + gerador',
-    after: 'Energia redundante supervisionada',
-    problem: 'O projeto anterior já propõe dois circuitos, nobreak e gerador. Falta transformar a redundância em uma rotina de manutenção, teste sob carga e resposta a alarmes.',
-    solution: 'Definir inspeções, teste de transferência sob carga, autonomia mínima baseada na BIA e alerta de falhas de alimentação.',
-    value: 'Aumenta a confiabilidade da redundância elétrica que já foi projetada.',
-    evidence: 'Laudos, testes de transferência, manutenção e alarmes.'
+    before: 'Dois circuitos, nobreak, gerador e teste em carga',
+    after: 'Eliminar dependências comuns da alimentação',
+    problem: 'O plano anterior já prevê circuitos redundantes, UPS, gerador, testes mensais e alimentação dupla dos racks. Ainda é necessário verificar se quadros, transferência, distribuição e refrigeração criam um ponto único de falha, apesar das duas entradas.',
+    solution: 'Analisar a cadeia ponta a ponta (alimentação externa → quadros → ATS → UPS → PDU → servidores e climatização), separar circuitos que compartilhem componentes críticos e dimensionar autonomia de combustível e refrigeração na transição.',
+    value: 'Ataca falhas simultâneas que não são resolvidas somente pela presença de dois circuitos e um gerador.',
+    evidence: 'Diagrama unifilar, análise de pontos comuns e teste de transferência contemplando carga de TI e climatização.',
+    risk: 'critical'
   },
   database: {
-    before: 'BD primário HA + réplica de DR',
-    after: 'Replicação e promoção validadas',
-    problem: 'O diagrama anterior já prevê banco primário de alta disponibilidade e replicação contínua para DR. Faltam critérios operacionais para lag, promoção e conciliação.',
-    solution: 'Monitorar atraso de replicação, definir promoção segura e ensaiar consistência transacional, retorno e prevenção de split-brain.',
-    value: 'Reduz o risco de perda ou divergência de pedidos durante a troca de ambiente.',
-    evidence: 'Monitoramento de lag, teste de promoção e conciliação de transações.'
+    before: 'HA local + réplica assíncrona e failover assistido',
+    after: 'Fencing e integridade transacional no failover',
+    problem: 'A proposta anterior reconhece o risco de dois primários, escolhe failover assistido e prevê RPO de 5 minutos. A replicação assíncrona, contudo, pode ter atraso variável e não garante por si só o limite em todas as falhas; o processo de impedir escrita simultânea não está tecnicamente especificado.',
+    solution: 'Definir fencing do antigo primário, promoção com confirmação de isolamento e lag, política explícita para exceder o RPO e reconciliação de pedidos durante perda de transações. Não tratar failover assistido como garantia automática de consistência.',
+    value: 'Reduz risco de split-brain, gravações conflitantes e perda silenciosa de pedidos durante uma comutação crítica.',
+    evidence: 'Ensaio de partição de rede, prova de bloqueio de escritas no primário antigo, histórico do lag e conciliação transacional.',
+    risk: 'critical'
   },
   etl: {
-    before: 'ETL / API com validação e sincronização',
-    after: 'ETL conciliado e observável',
-    problem: 'A proposta anterior já desacopla ERP e BI via ETL/API e prevê validação de dados. Não especifica controles mensuráveis de reconciliação e falhas de carga.',
-    solution: 'Definir checagens de contagem e totalização, alertas de atraso, reprocessamento idempotente e trilha de erros por carga.',
-    value: 'Evita que o BI apresente resultados inconsistentes sem aviso.',
-    evidence: 'Logs do pipeline, conciliações ERP × warehouse e alarmes.'
+    before: 'ETL isolado, idempotente e com conciliação diária',
+    after: 'Troca de origem sem lacunas ou duplicação',
+    problem: 'O documento anterior já exige carga reexecutável, conciliação, atualização e reconexão do BI após failover. A proposta não detalha o tratamento do cursor de extração e da ordem dos eventos quando o banco muda de primário ou perde transações ainda não replicadas.',
+    solution: 'Projetar checkpoints de extração compatíveis com a promoção do banco, reconciliação de lacunas por chave transacional e bloqueio de reprocessamentos que produzam duplicações após a troca de origem.',
+    value: 'Evita que uma recuperação do ERP resulte em informações de BI incorretas mesmo quando o ETL volta a executar.',
+    evidence: 'Teste de ETL durante promoção com perda simulada de logs, contagem de eventos e reconciliação ERP × warehouse.',
+    risk: 'high'
   },
   physical: {
-    before: 'Sala segura, refrigeração e detecção de incêndio',
-    after: 'Ambiente físico auditado',
-    problem: 'A arquitetura anterior contempla refrigeração, acesso controlado e detecção de incêndio. É necessário detalhar inspeções, registros e testes desses dispositivos.',
-    solution: 'Testar sensores ambientais e alarmes, revisar acessos à sala e manter manutenção e escalonamento documentados.',
-    value: 'Transforma os controles físicos já desenhados em medidas mensuráveis.',
-    evidence: 'Logs de acesso, testes de sensores e ordens de manutenção.'
+    before: 'Sala segura, refrigeração N+1 e sensores ambientais',
+    after: 'Verificar falhas comuns do ambiente físico',
+    problem: 'O documento anterior já inclui refrigeração com reserva, sensores de temperatura, água e fogo, controle de acesso e alarmes. Uma lacuna a avaliar é se climatização, detecção e rede de sensores compartilham energia e comunicações da mesma infraestrutura que precisam proteger.',
+    solution: 'Avaliar alimentação e comunicação alternativas para monitoramento ambiental e preservar climatização durante a transição elétrica, com ações automáticas seguras diante de temperatura crítica.',
+    value: 'Reduz a chance de falha ambiental em cascata mesmo com UPS/gerador e sensores previstos.',
+    evidence: 'Diagrama de alimentação da climatização e sensores, ensaio integrado de falha elétrica e limites térmicos.',
+    risk: 'high'
   },
   backup: {
-    before: 'Backup local NAS · regra 3-2-1',
-    after: 'Restore local com procedimento e aceite',
-    problem: 'O trabalho anterior já define cópia local, regra 3-2-1 e testes trimestrais. O refinamento é especificar a execução do restore e a validação de dados de negócio.',
-    solution: 'Criar runbook de restauração, separar credenciais, executar testes registrados e reconciliar pedidos/estoque antes de liberar o ERP.',
-    value: 'Comprova que o backup pode recuperar serviços e dados íntegros.',
-    evidence: 'Relatórios de restauração, hashes, conciliações e tempo medido.'
+    before: '3-2-1-1-0, cópias separadas e restore periódico',
+    after: 'Recuperar a cadeia completa do serviço',
+    problem: 'O plano anterior já inclui cópias imutáveis, credenciais separadas, testes mensais do banco, backup de configurações e restauração isolada. Porém, restaurar o banco sem também recuperar identidade, DNS, certificados, segredos e conectividade pode não devolver um ERP utilizável dentro da meta.',
+    solution: 'Definir um conjunto recuperável de dependências do ERP, incluindo configuração segura, segredos sob custódia e serviços de apoio, e exercitar restauração ponta a ponta em ambiente segregado.',
+    value: 'Reduz a diferença entre recuperar arquivos/dados e efetivamente voltar a receber pedidos e operar a logística.',
+    evidence: 'Teste integrado de recuperação do ERP acessível por usuários, com dependências e dados reconciliados.',
+    risk: 'critical'
   },
   recovery: {
-    before: 'BD réplica + ERP standby em nuvem',
-    after: 'DR acionável, medido e revertível',
-    problem: 'O plano anterior prevê DR em nuvem e teste de failover trimestral. Ainda é necessário detalhar acionamento, sequência, responsáveis e retorno ao site primário.',
-    solution: 'Formalizar runbook de desastre, validar failover e failback, medir RPO/RTO e registrar a autorização do negócio para retomada.',
-    value: 'Reduz incerteza operacional ao executar a arquitetura híbrida já proposta.',
-    evidence: 'Ata de simulação, checklist, RPO/RTO observados e aceite do negócio.'
+    before: 'DR com standby, failover assistido, failback e RPO/RTO medidos',
+    after: 'Dependências e reversão seguras no DR',
+    problem: 'O projeto anterior JÁ determina runbooks, failover assistido, failback sem perda, testes trimestrais e medição de RPO/RTO reais. A lacuna crítica é a compatibilidade das metas entre serviços: apoio (DNS, VPN, autenticação e rede) com RTO de 2 horas versus ERP com RTO de 1 hora. Também faltam critérios técnicos de isolamento do antigo primário e decisão sobre divergências.',
+    solution: 'Reavaliar a sequência e as metas conforme dependências; assegurar acesso, DNS e identidade antes do ERP; condicionar promoção a fencing do primário antigo; definir reconciliação e retorno sem sobrescrever transações realizadas na nuvem. Preservar a medição de RPO/RTO que o plano já previa.',
+    value: 'Transforma um failover tecnicamente executado em retomada efetiva da operação, sem risco de dois ambientes gravarem de forma conflitante.',
+    evidence: 'BIA coerente entre dependências, testes de partição/fencing, ensaio integrado de failover e failback com conciliação.',
+    risk: 'critical'
   },
   immutable: {
-    before: 'Backup em nuvem imutável, criptografado e versionado',
-    after: 'Imutabilidade, custódia e restore verificados',
-    problem: 'O projeto anterior já prevê cópia imutável em outra região, criptografia e chaves em KMS/HSM. Falta evidenciar proteção contra exclusão, acesso indevido e perda de chaves.',
-    solution: 'Testar imutabilidade, segregação de permissões, recuperação de chaves e restauração de cópias de outra região.',
-    value: 'Comprova a resistência das cópias contra ransomware e desastres.',
-    evidence: 'Teste de exclusão negada, trilhas de acesso, recuperação de chave e restore off-site.'
+    before: 'Backup imutável e cifrado em outra região, KMS/HSM',
+    after: 'Recuperação resistente à perda da identidade',
+    problem: 'O plano anterior já separa credenciais do backup, usa MFA, imutabilidade, chaves em KMS/HSM, custódia dupla e testes de restauração. Falta especificar se o acesso à conta de backup e às chaves permanece possível quando o provedor de identidade, a conta principal ou a conectividade do site estiverem indisponíveis.',
+    solution: 'Verificar independência do domínio de recuperação e estabelecer credenciais de emergência sob custódia, acesso ao KMS e cópias que permaneçam restauráveis durante indisponibilidade ou comprometimento do ambiente principal.',
+    value: 'Evita que backups íntegros e imutáveis fiquem inacessíveis exatamente no momento em que são necessários.',
+    evidence: 'Teste de recuperação sem IdP/VPN primários, demonstração de custódia das chaves e acesso à cópia off-site.',
+    risk: 'critical'
   }
 }
 
 export function refineInfrastructureComparison(board) {
-  if (board.id !== 'architecture') return board
-  return {
-    ...board,
-    intro: 'Evolução da arquitetura híbrida já proposta: controles operacionais, testes e evidências.',
-    baseline: 'O trabalho anterior já contemplava cluster, réplica em nuvem, redundância elétrica, dois links, backups 3-2-1, ETL/BI e segurança de borda.',
-    nodes: board.nodes.map(node => ({ ...node, ...(infrastructureChanges[node.id] || {}) }))
-  }
+ if(board.id !== 'architecture')return board
+ return {
+   ...board,
+   intro:'Lacunas arquiteturais críticas na proposta híbrida: dependências, falhas comuns e consistência de recuperação.',
+   baseline:'O plano anterior já prevê alta disponibilidade, DR em nuvem, failover assistido, failback, RPO/RTO medidos, rede dupla, backup 3-2-1-1-0 e controles físicos e lógicos. O refinamento aponta riscos adicionais ainda não resolvidos explicitamente.',
+   nodes:board.nodes.map(node=>{
+     const improvement=infrastructureChanges[node.id]
+     if(!improvement)throw new Error('Componente sem revisão de infraestrutura: '+node.id)
+     return {...node,...improvement}
+   })
+ }
 }
