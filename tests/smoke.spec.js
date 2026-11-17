@@ -152,7 +152,7 @@ test('home apresenta resumo macro e permite navegar para todos os sete diagramas
  await expect(page.getByRole('heading',{name:/Ciclo de vida/})).toBeVisible()
  await page.getByRole('tab',{name:/Visão geral/}).click()
  await page.getByRole('button',{name:/Fontes e premissas/}).click()
- await expect(page.getByText('FONTES E PREMISSAS')).toBeVisible()
+ await expect(page.getByText('FONTES E PREMISSAS',{exact:true})).toBeVisible()
  expect(errors).toEqual([])
 })
 
