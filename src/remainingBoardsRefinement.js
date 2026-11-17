@@ -149,7 +149,7 @@ const supplemental = {
 const byId = Object.fromEntries(Object.entries(proposals).map(([id, data]) => [
  id, {intro:data.intro, baseline:data.baseline, entries:Object.fromEntries(data.entries.map(([nodeId,before,after,problem,solution])=>[
    nodeId,{before,after,problem,solution}
- ]))]}
+ ]))}
 ]))
 
 export function refineRemainingBoards(board){
