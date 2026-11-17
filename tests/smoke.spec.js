@@ -86,3 +86,45 @@ test('infraestrutura compara o projeto híbrido anterior com a reengenharia, sem
  await expect(page.locator('.clean-card').filter({hasText:'Cluster com failover comprovado'})).toBeVisible()
  await expect(page.locator('.clean-card').filter({hasText:'Energia redundante supervisionada'})).toBeVisible()
 })
+
+test('seis seções usam o plano acadêmico anterior como referência', async ({page}) => {
+ const errors=[]
+ page.on('pageerror',error=>errors.push(error.message))
+ await page.goto('/')
+ const cases=[
+  {tab:'Matriz de risco',before:'Matriz R1–R11 e ativos citados',after:'Inventário vinculando ativos e riscos'},
+  {tab:'Identidade e acesso',before:'MFA administrativo e remoto proposto',after:'MFA forte com recuperação segura'},
+  {tab:'Recuperação',before:'Regra 3-2-1 e imutabilidade propostas',after:'Proteção testada em laboratório'},
+  {tab:'Governança de dados',before:'Coleta minimizada com finalidade e base legal',after:'Finalidade documentada por processo'},
+  {tab:'Políticas & controles',before:'Política 3-2-1 e rotina de testes definida',after:'Procedimentos e aceite registrados'},
+  {tab:'Plano de execução',before:'Fase 3: DR, BI e failover na nuvem',after:'Resiliência demonstrada em ensaios'},
+ ]
+ for(const item of cases){
+  await page.getByRole('tab',{name:new RegExp(item.tab,'i')}).click()
+  await page.getByRole('button',{name:'Antes',exact:true}).click()
+  await expect(page.getByText('PROJETO ANTERIOR · PROPOSTA JÁ REFINADA')).toBeVisible()
+  await expect(page.locator('.clean-card').filter({hasText:item.before})).toBeVisible()
+  await page.getByRole('button',{name:'Depois',exact:true}).click()
+  await expect(page.locator('.clean-card').filter({hasText:item.after})).toBeVisible()
+ }
+ await expect(page.getByLabel('Gravidade das intervenções')).toBeVisible()
+ await expect(page.locator('.clean-risk-critical').first()).toBeVisible()
+ await page.locator('.clean-card').first().click()
+ await expect(page.getByText('01 / LACUNA DO PROJETO ANTERIOR')).toBeVisible()
+ await expect(page.getByText(/GRAVIDADE DA INTERVENÇÃO · (CRÍTICA|ALTA|MODERADA)/)).toBeVisible()
+ expect(errors).toEqual([])
+})
+
+test('cada card mostra uma única gravidade por cor em todas as seções', async ({page}) => {
+ await page.goto('/')
+ for(const tab of ['Infraestrutura','Matriz de risco','Identidade e acesso','Recuperação','Governança de dados','Políticas & controles','Plano de execução']){
+  await page.getByRole('tab',{name:new RegExp(tab,'i')}).click()
+  const cards=page.locator('.clean-card')
+  const count=await cards.count()
+  expect(count).toBeGreaterThan(8)
+  expect(await page.locator('.clean-risk').count()).toBe(count)
+  expect(await page.locator('.clean-card-severity-critical, .clean-card-severity-high, .clean-card-severity-medium').count()).toBe(count)
+  const colored=await page.locator('.clean-card').first().evaluate(el=>getComputedStyle(el,'::before').backgroundColor)
+  expect(colored).not.toBe('rgba(0, 0, 0, 0)')
+ }
+})
