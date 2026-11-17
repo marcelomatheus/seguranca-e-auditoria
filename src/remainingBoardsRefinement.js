@@ -127,6 +127,7 @@ const supplemental = {
   breakglass:['Resposta a incidentes e acesso administrativo previstos','Acesso emergencial com custódia','A proposta anterior prevê resposta e proteção administrativa; não descreve um procedimento de acesso emergencial controlado.','Definir conta break-glass, aprovadores, expiração, armazenamento e revisão do uso depois do incidente.']
  },
  restore:{
+  measure:['Testes semanais, mensais, trimestrais e anuais previstos','Medição de resultados com critérios e aceite','O documento anterior já define calendário e evidências de restore/failover; o refinamento está na homologação dos resultados e tratamento de desvios.','Medir resultado por cenário, aprovar RPO/RTO após BIA, abrir não conformidades e repetir o teste após a correção.'],
   apps:['Retomada do ERP, ETL e BI em sequência prevista','Subida de serviços com healthchecks','O diagrama anterior já determina a retomada de ERP, ETL e BI, mas não formaliza pré-requisitos técnicos ou testes por serviço.','Detalhar ordem de subida, critérios de saúde, reconexão do ETL, avaliação do BI e aprovação para liberar usuários.'],
   lessons:['Testes e correção das falhas já previstos','Registro de causa e teste de eficácia','O documento anterior exige que falhas de teste gerem ações corretivas; falta comprovação uniforme de eficácia após o encerramento.','Vincular causa-raiz, responsável, prazo, evidência de correção e reteste do cenário.']
  },
