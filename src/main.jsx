@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { Activity, ArrowDownRight, ArrowLeftRight, ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Clock3, Cloud, Database, Download, FileCheck2, Fingerprint, GitBranch, HardDrive, Info, KeyRound, Layers3, LockKeyhole, Maximize2, Menu, MonitorCheck, Network, Play, RotateCcw, Search, Server, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Wifi, X, Zap } from 'lucide-react'
 import { expandBoards } from './boardEnhancements'
+import { refineInfrastructureComparison } from './infrastructureRefinement'
 import { diagramFor, routeLinks, CARD_WIDTH, CARD_HEIGHT } from './cleanDiagrams'
 import { Users, Thermometer, CloudUpload, ChartNoAxesCombined, Radar, ClipboardCheck, Tags, Workflow, AlertTriangle, Gauge, ListChecks, FileWarning, FilePlus, RefreshCw, UserX, GitFork, Bot, ScrollText, Siren, CalendarClock, HardDriveDownload, BellRing, ScanSearch, Boxes, Timer, EyeOff, CalendarRange, MessageSquareText, Trash2, Landmark, GraduationCap } from 'lucide-react'
 import './styles.css'
@@ -58,7 +59,7 @@ const cards = [
 ]
 
 Object.assign(ICONS,{Users,Thermometer,CloudUpload,ChartNoAxesCombined,Radar,ClipboardCheck,Tags,Workflow,AlertTriangle,Gauge,ListChecks,FileWarning,FilePlus,RefreshCw,UserX,GitFork,Bot,ScrollText,Siren,CalendarClock,HardDriveDownload,BellRing,ScanSearch,Boxes,Timer,EyeOff,CalendarRange,MessageSquareText,Trash2,Landmark,GraduationCap,RotateCcw})
-const BOARDS=expandBoards(cards)
+const BOARDS=expandBoards(cards).map(refineInfrastructureComparison)
 const riskLabels={critical:'CRÍTICO',high:'ALTO',medium:'MODERADO'}
 const stateLabels={before:'ESTRUTURA ORIGINAL',after:'REENGENHARIA PROPOSTA'}
 const riskOrder={critical:0,high:1,medium:2}
@@ -118,7 +119,7 @@ function Inspector({item,board,onClose}){
    <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>{riskLabels[item.risk]}</div>
    <h2>{item.label}</h2><p className="inspect-subtitle">{board.title} / estudo de caso DeliMarket</p>
    <div className="delta"><div><span>ANTES</span><p>{item.before}</p></div><ArrowRight size={20}/><div><span>DEPOIS</span><p>{item.after}</p></div></div>
-   {[['01 / PROBLEMA IDENTIFICADO',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
+   {[[board.id==='architecture'?'01 / LACUNA DO PROJETO ANTERIOR':'01 / PROBLEMA IDENTIFICADO',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
    <div className="inspect-note">Os estados representam o diagnóstico e a proposta de evolução. A aplicação não afirma que os controles já foram implantados.</div>
   </div>
  </aside></>
@@ -138,6 +139,7 @@ function Studio(){
  const pickBoard=id=>{setActive(id);setSelected(null)}
  const chooseMode=mode=>{setCompare(mode==='compare');if(mode!=='compare')setPhase(mode);setSelected(null)}
  const mode=compare?'compare':phase
+ const originalCaption=board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':stateLabels.before
  const exportPdf=async()=>{
   if(exporting)return
   setExporting(true)
@@ -147,7 +149,7 @@ function Studio(){
    const pdf=new jsPDF({format:'a3',orientation:'landscape',unit:'mm'})
    pdf.setFillColor(11,14,20);pdf.rect(0,0,420,297,'F')
    pdf.setTextColor(226,231,240);pdf.setFontSize(17);pdf.text('DELIMARKET   /   '+board.title.toUpperCase(),16,19)
-   pdf.setFontSize(9);pdf.setTextColor(151,168,195);pdf.text(compare?'COMPARATIVO — ANTES / DEPOIS':stateLabels[phase],16,27)
+   pdf.setFontSize(9);pdf.setTextColor(151,168,195);pdf.text(compare?'COMPARATIVO — PROJETO ANTERIOR / REENGENHARIA':phase==='before'?originalCaption:stateLabels.after,16,27)
    pdf.addImage(image,'PNG',13,37,394,241,undefined,'FAST')
    pdf.setTextColor(123,137,159);pdf.setFontSize(8);pdf.text('Segurança e Auditoria de Sistemas   •   Estudo de caso / propostas sujeitas a validação',16,288)
    pdf.save('delimarket-'+board.id+'-'+mode+'.pdf')
@@ -170,7 +172,7 @@ function Studio(){
     </div>
    </div>
    <main className={'canvas-stage '+(compare?'canvas-stage-compare':'')} ref={boardRef}>
-    {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>ESTRUTURA ORIGINAL</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {stateLabels[phase]}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
+    {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>{board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':'ESTRUTURA ORIGINAL'}</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {phase==='before'?originalCaption:stateLabels.after}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
     <div className="canvas-legend"><span><i className="legend-neutral"/> ATIVO / CONTROLE</span><span><i className="legend-risk"/> RISCO CRÍTICO</span><span><i className="legend-connection"/> DEPENDÊNCIA</span></div>
     <div className="canvas-guidance"><button onClick={()=>setShowHelp(!showHelp)} title="Instruções"><Info size={15}/></button>{showHelp&&<span>Arraste para navegar · Scroll para ampliar · Clique no componente para analisar · Use “Comparar” para visualizar a evolução</span>}</div>
    </main>
