@@ -7,6 +7,7 @@ import { jsPDF } from 'jspdf'
 import { Activity, ArrowDownRight, ArrowLeftRight, ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Clock3, Cloud, Database, Download, FileCheck2, Fingerprint, GitBranch, HardDrive, Info, KeyRound, Layers3, LockKeyhole, Maximize2, Menu, MonitorCheck, Network, Play, RotateCcw, Search, Server, Settings2, Shield, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Wifi, X, Zap } from 'lucide-react'
 import { expandBoards } from './boardEnhancements'
 import { refineInfrastructureComparison } from './infrastructureRefinement'
+import { refineRemainingBoards } from './remainingBoardsRefinement'
 import { diagramFor, routeLinks, CARD_WIDTH, CARD_HEIGHT } from './cleanDiagrams'
 import { Users, Thermometer, CloudUpload, ChartNoAxesCombined, Radar, ClipboardCheck, Tags, Workflow, AlertTriangle, Gauge, ListChecks, FileWarning, FilePlus, RefreshCw, UserX, GitFork, Bot, ScrollText, Siren, CalendarClock, HardDriveDownload, BellRing, ScanSearch, Boxes, Timer, EyeOff, CalendarRange, MessageSquareText, Trash2, Landmark, GraduationCap } from 'lucide-react'
 import './styles.css'
@@ -59,14 +60,14 @@ const cards = [
 ]
 
 Object.assign(ICONS,{Users,Thermometer,CloudUpload,ChartNoAxesCombined,Radar,ClipboardCheck,Tags,Workflow,AlertTriangle,Gauge,ListChecks,FileWarning,FilePlus,RefreshCw,UserX,GitFork,Bot,ScrollText,Siren,CalendarClock,HardDriveDownload,BellRing,ScanSearch,Boxes,Timer,EyeOff,CalendarRange,MessageSquareText,Trash2,Landmark,GraduationCap,RotateCcw})
-const BOARDS=expandBoards(cards).map(refineInfrastructureComparison)
-const riskLabels={critical:'CRÍTICO',high:'ALTO',medium:'MODERADO'}
-const stateLabels={before:'ESTRUTURA ORIGINAL',after:'REENGENHARIA PROPOSTA'}
+const BOARDS=expandBoards(cards).map(refineInfrastructureComparison).map(refineRemainingBoards)
+const riskLabels={critical:'CRÍTICA',high:'ALTA',medium:'MODERADA'}
+const stateLabels={before:'PROJETO ANTERIOR · PROPOSTA JÁ REFINADA',after:'REENGENHARIA PROPOSTA'}
 const riskOrder={critical:0,high:1,medium:2}
 function ComponentNode({data,selected}){
  const Icon=ICONS[data.item.icon]||Shield
- return <div className={'clean-card '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} title={data.item.problem} tabIndex={0} role="button" aria-label={data.item.label} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
-  <Handle type="target" position={Position.Left} style={{opacity:0,pointerEvents:"none"}}/><Handle type="source" position={Position.Right} style={{opacity:0,pointerEvents:"none"}}/><div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk}>{riskLabels[data.item.risk]}</span></div>
+ return <div className={'clean-card clean-card-severity-'+data.item.risk+' '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} title={data.item.problem} tabIndex={0} role="button" aria-label={data.item.label} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
+  <Handle type="target" position={Position.Left} style={{opacity:0,pointerEvents:"none"}}/><Handle type="source" position={Position.Right} style={{opacity:0,pointerEvents:"none"}}/><div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk} title={'Gravidade da intervenção proposta: '+riskLabels[data.item.risk]}>● {riskLabels[data.item.risk]}</span></div>
   <strong>{data.item.label}</strong>
   <p>{data.after?data.item.after:data.item.before}</p>
  </div>
@@ -116,11 +117,11 @@ function Inspector({item,board,onClose}){
  return <><div className="backdrop" onClick={onClose}/><aside className="inspector" aria-label="Detalhamento do controle">
   <div className="inspector-top"><span>INSPEÇÃO DE COMPONENTE</span><button className="icon-action" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button></div>
   <div className="inspector-scroll">
-   <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>{riskLabels[item.risk]}</div>
+   <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>GRAVIDADE DA INTERVENÇÃO · {riskLabels[item.risk]}</div>
    <h2>{item.label}</h2><p className="inspect-subtitle">{board.title} / estudo de caso DeliMarket</p>
    <div className="delta"><div><span>ANTES</span><p>{item.before}</p></div><ArrowRight size={20}/><div><span>DEPOIS</span><p>{item.after}</p></div></div>
-   {[[board.id==='architecture'?'01 / LACUNA DO PROJETO ANTERIOR':'01 / PROBLEMA IDENTIFICADO',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
-   <div className="inspect-note">Os estados representam o diagnóstico e a proposta de evolução. A aplicação não afirma que os controles já foram implantados.</div>
+   {[['01 / LACUNA DO PROJETO ANTERIOR',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
+   <div className="inspect-note">O estado “Antes” representa o projeto acadêmico anterior já proposto, não a infraestrutura original da DeliMarket. A aplicação não afirma que os controles já foram implantados.</div>
   </div>
  </aside></>
 }
@@ -172,8 +173,8 @@ function Studio(){
     </div>
    </div>
    <main className={'canvas-stage '+(compare?'canvas-stage-compare':'')} ref={boardRef}>
-    {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>{board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':'ESTRUTURA ORIGINAL'}</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {phase==='before'?originalCaption:stateLabels.after}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
-    <div className="canvas-legend"><span><i className="legend-neutral"/> ATIVO / CONTROLE</span><span><i className="legend-risk"/> RISCO CRÍTICO</span><span><i className="legend-connection"/> DEPENDÊNCIA</span></div>
+    {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>{board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':stateLabels.before}</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {phase==='before'?originalCaption:stateLabels.after}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
+    <div className="canvas-legend" aria-label="Gravidade das intervenções"><strong>GRAVIDADE DA INTERVENÇÃO</strong><span><i className="severity-key severity-key-critical"/> CRÍTICA</span><span><i className="severity-key severity-key-high"/> ALTA</span><span><i className="severity-key severity-key-medium"/> MODERADA</span></div>
     <div className="canvas-guidance"><button onClick={()=>setShowHelp(!showHelp)} title="Instruções"><Info size={15}/></button>{showHelp&&<span>Arraste para navegar · Scroll para ampliar · Clique no componente para analisar · Use “Comparar” para visualizar a evolução</span>}</div>
    </main>
    <footer className="sheetbar">
@@ -182,7 +183,7 @@ function Studio(){
     <div className="sheet-right"><span><span className="status-dot"/> VISÃO CONCEITUAL</span></div>
    </footer>
    {selected&&<Inspector item={selected} board={board} onClose={()=>setSelected(null)}/>}
-   {sources&&<><div className="backdrop" onClick={()=>setSources(false)}/><aside className="references-panel"><div className="inspector-top"><span>FONTES E PREMISSAS</span><button className="icon-action" onClick={()=>setSources(false)}><X size={18}/></button></div><div className="references-body"><h2>Base do estudo</h2><p>O redesenho parte do plano visual e do documento detalhado da DeliMarket. A arquitetura é uma proposta acadêmica, sem alegação de instalação real dos controles.</p><h3>REFERÊNCIAS TÉCNICAS</h3><ul><li>ISO/IEC 27001, 27002 e 27005 — gestão, controles e riscos.</li><li>ISO 22301 — continuidade de negócios.</li><li>NIST SP 800-34 — planejamento de contingência.</li><li>NIST SP 800-63B — senhas, MFA e autenticação.</li><li>LGPD (Lei 13.709/2018) — tratamento e proteção de dados.</li><li>TCU — boas práticas em Segurança da Informação.</li></ul><h3>NOTA SOBRE METAS</h3><p>O material visual propõe RPO ≤ 15 min e RTO ≤ 4 h; o documento detalhado propõe RPO ≤ 5 min e RTO ≤ 1 h. As metas são alternativas a validar e aprovar mediante BIA.</p><h3>COMO LER OS BOARDS</h3><p>As zonas exibem dependências e fluxos. Os controles “antes” correspondem ao diagnóstico/projeto original. O “depois” mostra o refinamento, com verificações de auditoria em cada componente.</p></div></aside></>}
+   {sources&&<><div className="backdrop" onClick={()=>setSources(false)}/><aside className="references-panel"><div className="inspector-top"><span>FONTES E PREMISSAS</span><button className="icon-action" onClick={()=>setSources(false)}><X size={18}/></button></div><div className="references-body"><h2>Base do estudo</h2><p>O redesenho parte do plano visual e do documento detalhado da DeliMarket. A arquitetura é uma proposta acadêmica, sem alegação de instalação real dos controles.</p><h3>REFERÊNCIAS TÉCNICAS</h3><ul><li>ISO/IEC 27001, 27002 e 27005 — gestão, controles e riscos.</li><li>ISO 22301 — continuidade de negócios.</li><li>NIST SP 800-34 — planejamento de contingência.</li><li>NIST SP 800-63B — senhas, MFA e autenticação.</li><li>LGPD (Lei 13.709/2018) — tratamento e proteção de dados.</li><li>TCU — boas práticas em Segurança da Informação.</li></ul><h3>NOTA SOBRE METAS</h3><p>O material visual propõe RPO ≤ 15 min e RTO ≤ 4 h; o documento detalhado propõe RPO ≤ 5 min e RTO ≤ 1 h. As metas são alternativas a validar e aprovar mediante BIA.</p><h3>COMO LER OS BOARDS</h3><p>As conexões mostram dependências e fluxos. “Antes” é o plano acadêmico anterior já refinado; “Depois” adiciona detalhamento, procedimentos e critérios de auditoria. As cores dos cards expressam a gravidade proposta da intervenção (crítica, alta ou moderada), não a implementação do controle.</p></div></aside></>}
  </div>
 }
 createRoot(document.getElementById('root')).render(<Studio/>)
