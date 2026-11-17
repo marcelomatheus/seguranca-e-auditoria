@@ -4,9 +4,9 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Blocks, BookOpen, CheckCircle
 const sections = [
   {
     code:'01',id:'architecture',name:'Infraestrutura e continuidade',
-    icon:Network,problem:'A arquitetura híbrida anterior já prevê redundância, mas sua continuidade operacional precisa ser comprovada.',
-    response:'Detalhar testes de failover, monitoramento de energia e replicação, recuperação e critérios de aceite.',
-    goal:'Continuidade testável'
+    icon:Network,problem:'O plano anterior já mede RPO/RTO e prevê failover. O maior risco é a dependência entre ERP, serviços de apoio e ambientes que podem falhar em conjunto.',
+    response:'Corrigir metas de recuperação incompatíveis, eliminar falhas comuns e proteger a consistência do banco durante a comutação.',
+    goal:'Continuidade sem falhas comuns'
   },
   {
     code:'02',id:'assets',name:'Ativos e riscos',
