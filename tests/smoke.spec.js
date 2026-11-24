@@ -292,3 +292,23 @@ test('captura visual do diagrama no navegador Chromium', async ({page})=>{
  await page.waitForTimeout(650)
  await page.screenshot({path:'screenshots/board-drawer.png',fullPage:true})
 })
+
+
+test('card na última coluna continua visível após abrir o drawer', async ({page})=>{
+ await page.setViewportSize({width:1440,height:900})
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ const last=page.locator('.clean-card').last()
+ await last.click()
+ await expect(last).toHaveClass(/clean-card-selected/)
+ await page.waitForTimeout(850)
+ const card=await last.boundingBox()
+ const stage=await page.locator('.canvas-stage').boundingBox()
+ expect(card).not.toBeNull()
+ expect(stage).not.toBeNull()
+ expect(card.x).toBeGreaterThanOrEqual(stage.x-3)
+ expect(card.x+card.width).toBeLessThanOrEqual(stage.x+stage.width+3)
+ await expect(page.getByLabel('Detalhamento do controle')).toBeVisible()
+ mkdirSync('screenshots',{recursive:true})
+ await page.screenshot({path:'screenshots/board-last-selected.png',fullPage:true})
+})
