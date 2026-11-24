@@ -31,6 +31,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run browser smoke tests
         run: npm run test:e2e
+      - name: Upload board screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: board-visual-review
+          path: screenshots/
+          if-no-files-found: ignore
       - name: Upload browser test report
         if: failure()
         uses: actions/upload-artifact@v4
