@@ -132,7 +132,7 @@ function Diagram({board,phase,selected,onInspect}){
   setHover({
    item:node.data.item,
    x:Math.max(12,Math.min(rect.width-326,event.clientX-rect.left+18)),
-   y:Math.max(12,Math.min(rect.height-154,event.clientY-rect.top+16))
+   y:Math.max(12,Math.min(rect.height-234,event.clientY-rect.top+16))
   })
  }
  return <div className="diagram-surface" ref={surfaceRef}>
