@@ -67,22 +67,41 @@ const stateLabels={before:'PROJETO ANTERIOR · PROPOSTA JÁ REFINADA',after:'REE
 const riskOrder={critical:0,high:1,medium:2}
 function ComponentNode({data,selected}){
  const Icon=ICONS[data.item.icon]||Shield
- return <div className={'clean-card clean-card-severity-'+data.item.risk+' '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} title={data.item.problem} tabIndex={0} role="button" aria-label={data.item.label} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
-  <Handle type="target" position={Position.Left} style={{opacity:0,pointerEvents:"none"}}/><Handle type="source" position={Position.Right} style={{opacity:0,pointerEvents:"none"}}/><div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk} title={'Gravidade da intervenção proposta: '+riskLabels[data.item.risk]}>● {riskLabels[data.item.risk]}</span></div>
+ return <div className={'clean-card clean-card-severity-'+data.item.risk+' '+(data.after?'clean-card-after':'clean-card-before')+(selected?' clean-card-selected':'')} tabIndex={0} role="button" aria-label={data.item.label} aria-pressed={selected} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();data.inspect(data.item)}}} onClick={()=>data.inspect(data.item)}>
+  <Handle type="target" position={Position.Left} style={{opacity:0,pointerEvents:'none'}}/>
+  <Handle type="source" position={Position.Right} style={{opacity:0,pointerEvents:'none'}}/>
+  <div className="clean-card-line"><span className="clean-card-icon"><Icon size={19} strokeWidth={1.7}/></span><span className={'clean-risk clean-risk-'+data.item.risk} title={'Gravidade da intervenção proposta: '+riskLabels[data.item.risk]}>● {riskLabels[data.item.risk]}</span></div>
   <strong>{data.item.label}</strong>
   <p>{data.after?data.item.after:data.item.before}</p>
+  {selected&&<span className="card-selected-indicator"><Check size={12}/> SELECIONADO</span>}
  </div>
 }
+function roundedPath(points){
+ if(points.length<2)return ''
+ let d='M'+points[0].x+' '+points[0].y
+ for(let i=1;i<points.length-1;i++){
+  const prev=points[i-1],point=points[i],next=points[i+1]
+  const inbound=Math.hypot(point.x-prev.x,point.y-prev.y)
+  const outbound=Math.hypot(next.x-point.x,next.y-point.y)
+  const radius=Math.min(8,inbound/2,outbound/2)
+  if(radius<1){d+=' L'+point.x+' '+point.y;continue}
+  const entering={x:point.x+(prev.x-point.x)/inbound*radius,y:point.y+(prev.y-point.y)/inbound*radius}
+  const leaving={x:point.x+(next.x-point.x)/outbound*radius,y:point.y+(next.y-point.y)/outbound*radius}
+  d+=' L'+entering.x+' '+entering.y+' Q'+point.x+' '+point.y+' '+leaving.x+' '+leaving.y
+ }
+ const last=points[points.length-1]
+ return d+' L'+last.x+' '+last.y
+}
 function FlowingEdge({id,data}){
- const points=data.points
- const path=points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')
- const stroke=data.after?'#93aee1':'#baa4ab'
+ const path=roundedPath(data.points)
+ const stroke=data.after?'#91a9d2':'#aa9ca9'
+ const marker='arrow-'+(data.after?'after-':'before-')+id
  return <g className="diagram-connection" data-animation="flow" data-testid="animated-connection">
-  <defs><marker id={'head-'+id} viewBox="0 0 8 8" markerWidth="6" markerHeight="6" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 Z" fill={stroke}/></marker></defs>
-  <path d={path} fill="none" stroke={stroke} strokeWidth="1.8" strokeOpacity=".65" strokeLinejoin="round" markerEnd={'url(#head-'+id+')'}/>
-  <path d={path} fill="none" stroke={stroke} strokeWidth="2.7" strokeOpacity=".6" strokeDasharray="3 16" className="flow-trace" strokeLinejoin="round"/>
-  <circle r="3.1" fill={stroke} opacity=".95">
-    <animateMotion dur={String(3.1+data.index*.13)+'s'} repeatCount="indefinite" path={path} rotate="auto"/>
+  <defs><marker id={marker} viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="8.8" refY="5" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></marker></defs>
+  <path d={path} className="connection-base" fill="none" stroke={stroke} strokeWidth="1.6" strokeOpacity=".55" strokeLinejoin="round" strokeLinecap="round" markerEnd={'url(#'+marker+')'}/>
+  <path d={path} fill="none" stroke={stroke} strokeWidth="2" strokeDasharray="2 19" className="flow-trace" strokeLinecap="round" strokeOpacity=".8"/>
+  <circle r="2.9" fill={stroke} opacity=".95">
+    <animateMotion dur={String(3.7+data.index*.11)+'s'} repeatCount="indefinite" path={path}/>
   </circle>
  </g>
 }
@@ -90,6 +109,8 @@ const nodeTypes={component:ComponentNode}
 const edgeTypes={flow:FlowingEdge}
 function Diagram({board,phase,selected,onInspect}){
  const flow=useReactFlow()
+ const surfaceRef=useRef(null)
+ const [hover,setHover]=useState(null)
  const after=phase==='after'
  const {nodes,edges}=useMemo(()=>{
   const diagram=diagramFor(board)
@@ -102,29 +123,63 @@ function Diagram({board,phase,selected,onInspect}){
    data:{...edge,after,index},selectable:false,animated:false
   }))
   return {nodes,edges:connections}
- },[board,after,selected,onInspect])
- useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.09,maxZoom:1.12,duration:420}),90);return()=>clearTimeout(t)},[board.id,phase,flow])
- return <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-  fitView fitViewOptions={{padding:.09}} minZoom={.28} maxZoom={1.8}
-  nodesDraggable={false} nodesConnectable={false} elementsSelectable={true}
-  onNodeClick={(_,node)=>onInspect(node.data.item)} colorMode="dark">
+ },[board,after,selected?.id,onInspect])
+ useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.09,maxZoom:1.1,duration:400}),120);return()=>clearTimeout(t)},[board.id,phase,selected?.id,flow])
+ const positionTooltip=(event,node)=>{
+  if(selected)return
+  const rect=surfaceRef.current?.getBoundingClientRect()
+  if(!rect)return
+  setHover({
+   item:node.data.item,
+   x:Math.max(12,Math.min(rect.width-326,event.clientX-rect.left+18)),
+   y:Math.max(12,Math.min(rect.height-154,event.clientY-rect.top+16))
+  })
+ }
+ return <div className="diagram-surface" ref={surfaceRef}>
+  <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+    fitView fitViewOptions={{padding:.09}} minZoom={.28} maxZoom={1.8}
+    nodesDraggable={false} nodesConnectable={false} elementsSelectable={true}
+    onNodeClick={(_,node)=>{setHover(null);onInspect(node.data.item)}}
+    onNodeMouseEnter={positionTooltip}
+    onNodeMouseMove={positionTooltip}
+    onNodeMouseLeave={()=>setHover(null)}
+    onPaneClick={()=>setHover(null)}
+    colorMode="dark">
     <Background variant="dots" color="#343b4a" gap={24} size={1}/>
     <Controls showInteractive={false} position="bottom-left"/>
   </ReactFlow>
+  {hover&&!selected&&<div className="node-hover-summary" role="tooltip" style={{left:hover.x,top:hover.y}}>
+   <span className="node-hover-eyebrow">RESUMO DA MUDANÇA</span>
+   <strong>{hover.item.label}</strong>
+   <div className="node-hover-delta"><span>ANTES</span><p>{hover.item.before}</p><span>DEPOIS</span><p>{hover.item.after}</p></div>
+   <p className="node-hover-solution">{hover.item.solution}</p>
+   <span className="node-hover-hint">Clique para ver a justificativa completa</span>
+  </div>}
+ </div>
 }
 function DiagramBoard(props){return <ReactFlowProvider><Diagram {...props}/></ReactFlowProvider>}
 function Inspector({item,board,onClose}){
  const Icon=ICONS[item.icon]||Shield
- return <><div className="backdrop" onClick={onClose}/><aside className="inspector" aria-label="Detalhamento do controle">
+ const sections=[
+  {title:'01 / LACUNA DO PROJETO ANTERIOR',Icon:CircleAlert,text:item.problem},
+  {title:'02 / SOLUÇÃO PROPOSTA',Icon:Settings2,text:item.solution},
+  {title:'03 / JUSTIFICATIVA TÉCNICA',Icon:ShieldCheck,text:item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference},
+  {title:'04 / VALOR PARA A DELIMARKET',Icon:Activity,text:item.value},
+  {title:'05 / EVIDÊNCIA DE AUDITORIA',Icon:FileCheck2,text:item.evidence},
+  {title:'06 / BASE TÉCNICA',Icon:BookOpen,text:board.reference}
+ ]
+ return <aside className="inspector" aria-label="Detalhamento do controle">
   <div className="inspector-top"><span>INSPEÇÃO DE COMPONENTE</span><button className="icon-action" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button></div>
   <div className="inspector-scroll">
    <div className="inspect-symbol"><Icon size={25}/></div><div className={'severity severity-'+item.risk}>GRAVIDADE DA INTERVENÇÃO · {riskLabels[item.risk]}</div>
    <h2>{item.label}</h2><p className="inspect-subtitle">{board.title} / estudo de caso DeliMarket</p>
    <div className="delta"><div><span>ANTES</span><p>{item.before}</p></div><ArrowRight size={20}/><div><span>DEPOIS</span><p>{item.after}</p></div></div>
-   {[['01 / LACUNA DO PROJETO ANTERIOR',item.problem],['02 / SOLUÇÃO PROPOSTA',item.solution],['03 / JUSTIFICATIVA TÉCNICA',item.value+' A medida responde ao problema descrito e deve ser validada por '+item.evidence.toLowerCase()+' Referência: '+board.reference],['04 / VALOR PARA A DELIMARKET',item.value],['05 / EVIDÊNCIA DE AUDITORIA',item.evidence],['06 / BASE TÉCNICA',board.reference]].map(([title,value])=><section key={title}><h3>{title}</h3><p>{value}</p></section>)}
+   {sections.map(({title,Icon:SectionIcon,text})=><section key={title} className="inspector-section">
+    <h3><span className="inspector-section-icon"><SectionIcon size={16} strokeWidth={1.75}/></span>{title}</h3><p>{text}</p>
+   </section>)}
    <div className="inspect-note">O estado “Antes” representa o projeto acadêmico anterior já proposto, não a infraestrutura original da DeliMarket. A aplicação não afirma que os controles já foram implantados.</div>
   </div>
- </aside></>
+ </aside>
 }
 function Studio(){
  const [active,setActive]=useState('overview')
@@ -139,6 +194,7 @@ function Studio(){
  const isOverview=active==='overview'
  const board=BOARDS.find(x=>x.id===active)||BOARDS[0]
  const onInspect=useCallback(item=>setSelected(item),[])
+ useEffect(()=>{if(!selected)return;const close=event=>{if(event.key==='Escape')setSelected(null)};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[selected])
  const pickBoard=id=>{setActive(id);setSelected(null);setCompare(false);setPhase('after')}
  const chooseMode=mode=>{setCompare(mode==='compare');if(mode!=='compare')setPhase(mode);setSelected(null)}
  const mode=compare?'compare':phase
@@ -174,7 +230,7 @@ function Studio(){
      <div className="mode-picker" role="group" aria-label="Visualização"><button className={mode==='before'?'mode-active':''} onClick={()=>chooseMode('before')}>Antes</button><button className={mode==='after'?'mode-active':''} onClick={()=>chooseMode('after')}>Depois</button><button className={mode==='compare'?'mode-active':''} onClick={()=>chooseMode('compare')}><ArrowLeftRight size={13}/> Comparar</button></div>
     </div>
    </div>
-   <main className={'canvas-stage '+(compare?'canvas-stage-compare':'')} ref={boardRef}>
+   <main className={'canvas-stage '+(compare?'canvas-stage-compare ':'')+(selected?'canvas-stage-inspecting':'')} ref={boardRef}>
     {compare?<><div className="comparison-pane"><span className="pane-badge pane-original"><span/> ANTES <small>{board.id==='architecture'?'PROJETO ANTERIOR · ARQUITETURA HÍBRIDA':stateLabels.before}</small></span><DiagramBoard key={board.id+'before'} board={board} phase="before" selected={selected} onInspect={onInspect}/></div><div className="comparison-pane"><span className="pane-badge pane-proposal"><span/> DEPOIS <small>PROPOSTA DE REENGENHARIA</small></span><DiagramBoard key={board.id+'after'} board={board} phase="after" selected={selected} onInspect={onInspect}/></div></>:<><span className={'stage-state '+(phase==='after'?'stage-after':'stage-before')}><span/> {phase==='before'?originalCaption:stateLabels.after}</span><DiagramBoard key={board.id+phase} board={board} phase={phase} selected={selected} onInspect={onInspect}/></>}
     <div className="canvas-legend" aria-label="Gravidade das intervenções"><strong>GRAVIDADE DA INTERVENÇÃO</strong><span><i className="severity-key severity-key-critical"/> CRÍTICA</span><span><i className="severity-key severity-key-high"/> ALTA</span><span><i className="severity-key severity-key-medium"/> MODERADA</span></div>
     <div className="canvas-guidance"><button onClick={()=>setShowHelp(!showHelp)} title="Instruções"><Info size={15}/></button>{showHelp&&<span>Arraste para navegar · Scroll para ampliar · Clique no componente para analisar · Use “Comparar” para visualizar a evolução</span>}</div>
