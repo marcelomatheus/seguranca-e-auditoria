@@ -112,3 +112,58 @@
 @media(max-width:1030px){.overview-hero-inner{gap:20px;grid-template-columns:1.45fr .75fr}.overview-hero-right{transform:scale(.8);transform-origin:center}.overview-workstream-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.overview-container{width:calc(100% - 36px)}.overview-hero-inner{display:block;min-height:0}.overview-hero-left{padding:45px 0 48px}.overview-hero h1{font-size:34px}.overview-hero-right{display:none}.overview-context-grid,.overview-outcome-inner{grid-template-columns:1fr;gap:16px}.overview-intro{padding:40px 0}.overview-principles{grid-template-columns:1fr;margin-top:25px}.overview-principle,.overview-principle+.overview-principle{border-left:none;border-top:1px solid #344156;padding:16px 0}.overview-principle:first-child{border-top:0}.overview-workstreams{padding:45px 0}.overview-workstreams-title{display:block}.overview-workstreams-title>p{margin-top:15px}.overview-workstream-grid{grid-template-columns:1fr}.overview-workstream{min-height:0;padding:19px}.overview-workstream h3{margin:12px 0 16px}.overview-outcome{padding:47px 0}.overview-end{gap:18px;margin-top:35px}.overview-footer>.overview-container{align-items:flex-start;flex-direction:column;justify-content:center;padding:15px 0}.overview-hero-actions{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.overview-orbit{animation:none}}
+
+
+/* Board polish: orthogonal connectors, readable hover and a non-modal inspector. */
+.diagram-surface{position:relative;width:100%;height:100%;min-height:0}
+.diagram-surface>.react-flow{height:100%;width:100%}
+.react-flow__node-component.selected,.react-flow__node-component:hover{z-index:16!important}
+.diagram-connection .connection-base{filter:drop-shadow(0 0 2px #98b4ec22)}
+.diagram-connection .flow-trace{animation:directional-flow 2.4s linear infinite}
+.clean-card{overflow:visible;isolation:isolate}
+.clean-card::before{z-index:1}
+.clean-card:hover{transform:translateY(-1px);border-color:#9aafd3;box-shadow:0 4px 17px #0006}
+.clean-card-selected,.clean-card-selected:hover{
+ background:#2b3c58;
+ border-color:#b8ceff!important;
+ outline:2px solid #a6c4ff;
+ outline-offset:3px;
+ box-shadow:0 0 0 7px #7a9dd424,0 0 24px #7fa6e34c,0 10px 26px #0009!important;
+ transform:translateY(-2px);
+}
+.clean-card-selected::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:7px;background:linear-gradient(120deg,#5b85c118,transparent 60%)}
+.card-selected-indicator{position:absolute;right:9px;top:-16px;display:flex;align-items:center;gap:5px;background:#b7ccfa;color:#15243e;border:1px solid #d6e3ff;padding:4px 8px;border-radius:3px;font:8px 'IBM Plex Mono',monospace;letter-spacing:.06em;font-weight:700;white-space:nowrap;box-shadow:0 3px 9px #0008;z-index:4}
+.node-hover-summary{
+ position:absolute;z-index:19;pointer-events:none;max-width:calc(100% - 24px);
+ width:310px;padding:15px 17px 13px;
+ border:1px solid #6683b1;border-radius:7px;
+ background:#1a2535f7;color:#e9effa;
+ box-shadow:0 18px 48px #000a,0 0 0 1px #ffffff0a;
+ backdrop-filter:blur(9px);animation:summary-fade .13s ease-out;
+}
+@keyframes summary-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.node-hover-eyebrow{display:block;font:9px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#99b5e7;margin-bottom:7px}
+.node-hover-summary>strong{display:block;font-size:13px;line-height:1.3;margin-bottom:9px}
+.node-hover-delta{display:grid;grid-template-columns:48px 1fr;gap:6px 10px;align-items:baseline;margin-bottom:9px}
+.node-hover-delta span{font:8px 'IBM Plex Mono',monospace;color:#8ca6d3}
+.node-hover-delta p{font-size:11px;line-height:1.5;color:#d1daea;margin:0}
+.node-hover-delta p:nth-of-type(2){color:#bdd3f5}
+.node-hover-solution{font-size:11px;line-height:1.6;color:#aebdd1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0 0 11px}
+.node-hover-hint{display:block;border-top:1px solid #40526e;padding-top:9px;font:9px 'IBM Plex Mono',monospace;color:#9bb8eb}
+.canvas-stage-inspecting{margin-right:min(440px,38vw);transition:margin-right .22s ease-out}
+.inspector{width:min(440px,38vw);background:#151d29;border-left-color:#5b7296;box-shadow:-14px 0 45px #0008}
+.inspector-section h3{display:flex;align-items:center;gap:12px;font-size:10px!important;letter-spacing:.07em}
+.inspector-section-icon{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;border:1px solid #496386;border-radius:6px;background:#24344b;color:#aec8f2}
+.inspector-section p{padding-left:40px}
+.inspector .delta{background:#202d40;border-color:#526b90}
+@media(max-width:850px){
+ .canvas-stage-inspecting{margin-right:0;margin-bottom:50dvh}
+ .inspector{width:100vw;height:50dvh;top:auto;bottom:0;border-left:none;border-top:1px solid #607aa2}
+ .node-hover-summary{width:280px}
+}
+@media(prefers-reduced-motion:reduce){.node-hover-summary{animation:none}}
+
+/* Keep inspector and hover readable from the first rendered frame. */
+.node-hover-summary{animation:none}
+.inspector{animation:drawer-slide-solid .18s ease-out both;opacity:1}
+@keyframes drawer-slide-solid{from{transform:translateX(16px)}to{transform:translateX(0)}}

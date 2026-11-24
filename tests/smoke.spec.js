@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { mkdirSync } from 'node:fs'
+import { diagramFor, routeLinks, pathIsOrthogonal, CARD_WIDTH, CARD_HEIGHT } from '../src/cleanDiagrams.js'
+import { ENHANCEMENTS } from '../src/boardEnhancements.js'
 
 test('renders dense bottom-tab boards, comparison, inspector and PDF', async ({ page }) => {
  const errors=[]
@@ -100,7 +103,7 @@ test('seis seções usam o plano acadêmico anterior como referência', async ({
   {tab:'Recuperação',before:'Regra 3-2-1 e imutabilidade propostas',after:'Proteção testada em laboratório'},
   {tab:'Governança de dados',before:'Coleta minimizada com finalidade e base legal',after:'Finalidade documentada por processo'},
   {tab:'Políticas & controles',before:'Política 3-2-1 e rotina de testes definida',after:'Procedimentos e aceite registrados'},
-  {tab:'Plano de execução',before:'Fase 3: DR, BI e failover na nuvem',after:'Resiliência demonstrada em ensaios'},
+  {tab:'Plano de execução',before:'Fase 3: DR, BI e failover medindo RPO/RTO',after:'Dependências e isolamento validados'},
  ]
  for(const item of cases){
   await page.getByRole('tab',{name:new RegExp(item.tab,'i')}).click()
@@ -218,4 +221,94 @@ test('inicialização cobre todos os nós da infraestrutura sem exceções', asy
  }
  for(const label of labels)expect(all.nodes.some(node=>node.label===label)).toBe(true)
  expect(errors).toEqual([])
+})
+
+
+test('conexões usam âncoras exatas, segmentos ortogonais e não atravessam os cards', async () => {
+ const boards=['architecture','assets','identity','restore','lifecycle','policy','roadmap']
+ for(const id of boards){
+  const config=ENHANCEMENTS[id]
+  const nodes=[
+   ...Object.keys(config.existing).map(id=>({id,label:id})),
+   ...config.extra.map(([id,,label])=>({id,label}))
+  ]
+  const layout=diagramFor({id,nodes})
+  const edges=routeLinks(layout)
+  expect(edges.length,id).toBeGreaterThan(6)
+  for(const edge of edges){
+   expect(pathIsOrthogonal(edge.points),id+':'+edge.source+'→'+edge.target).toBe(true)
+   expect(edge.points.length,id+':'+edge.source+'→'+edge.target).toBeLessThan(17)
+   for(let i=1;i<edge.points.length;i++){
+    const a=edge.points[i-1],b=edge.points[i]
+    expect(a.x===b.x||a.y===b.y,id+': diagonal').toBe(true)
+    for(const node of layout.nodes){
+     const insideHorizontal=a.y===b.y&&a.y>node.y+1&&a.y<node.y+CARD_HEIGHT-1&&Math.max(a.x,b.x)>node.x+1&&Math.min(a.x,b.x)<node.x+CARD_WIDTH-1
+     const insideVertical=a.x===b.x&&a.x>node.x+1&&a.x<node.x+CARD_WIDTH-1&&Math.max(a.y,b.y)>node.y+1&&Math.min(a.y,b.y)<node.y+CARD_HEIGHT-1
+     expect(insideHorizontal||insideVertical,id+': '+edge.source+'→'+edge.target+' atravessa '+node.item.id).toBe(false)
+    }
+   }
+  }
+ }
+})
+
+test('hover detalha mudança; clique destaca card enquanto drawer com ícones permanece aberto', async ({page})=>{
+ const errors=[]
+ page.on('pageerror',error=>errors.push(error.message))
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ const card=page.locator('.clean-card').first()
+ await card.hover()
+ const tip=page.getByRole('tooltip')
+ await expect(tip).toBeVisible()
+ await expect(tip.getByText('RESUMO DA MUDANÇA')).toBeVisible()
+ await expect(tip.getByText('ANTES',{exact:true})).toBeVisible()
+ await expect(tip.getByText('DEPOIS',{exact:true})).toBeVisible()
+ await card.click()
+ await expect(page.getByLabel('Detalhamento do controle')).toBeVisible()
+ await expect(page.locator('.clean-card-selected')).toHaveCount(1)
+ await expect(page.locator('.clean-card-selected')).toHaveAttribute('aria-pressed','true')
+ await expect(page.locator('.inspector-section-icon')).toHaveCount(6)
+ await expect(page.locator('.canvas-stage-inspecting')).toBeVisible()
+ await expect(page.getByRole('tooltip')).toHaveCount(0)
+ await page.keyboard.press('Escape')
+ await expect(page.getByLabel('Detalhamento do controle')).toHaveCount(0)
+ await expect(page.locator('.clean-card-selected')).toHaveCount(0)
+ expect(errors).toEqual([])
+})
+
+test('captura visual do diagrama no navegador Chromium', async ({page})=>{
+ await page.setViewportSize({width:1440,height:900})
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ await expect.poll(async()=>page.locator('.diagram-connection').count()).toBeGreaterThan(6)
+ mkdirSync('screenshots',{recursive:true})
+ await page.screenshot({path:'screenshots/board-infraestrutura.png',fullPage:true})
+ await page.locator('.clean-card').first().hover()
+ await expect(page.getByRole('tooltip')).toBeVisible()
+ await page.waitForTimeout(240)
+ await page.screenshot({path:'screenshots/board-hover.png',fullPage:true})
+ await page.locator('.clean-card').first().click()
+ await expect(page.locator('.clean-card-selected')).toHaveCount(1)
+ await page.waitForTimeout(650)
+ await page.screenshot({path:'screenshots/board-drawer.png',fullPage:true})
+})
+
+
+test('card na última coluna continua visível após abrir o drawer', async ({page})=>{
+ await page.setViewportSize({width:1440,height:900})
+ await page.goto('/')
+ await page.getByRole('tab',{name:/Infraestrutura/i}).click()
+ const last=page.locator('.clean-card').last()
+ await last.click()
+ await expect(last).toHaveClass(/clean-card-selected/)
+ await page.waitForTimeout(850)
+ const card=await last.boundingBox()
+ const stage=await page.locator('.canvas-stage').boundingBox()
+ expect(card).not.toBeNull()
+ expect(stage).not.toBeNull()
+ expect(card.x).toBeGreaterThanOrEqual(stage.x-3)
+ expect(card.x+card.width).toBeLessThanOrEqual(stage.x+stage.width+3)
+ await expect(page.getByLabel('Detalhamento do controle')).toBeVisible()
+ mkdirSync('screenshots',{recursive:true})
+ await page.screenshot({path:'screenshots/board-last-selected.png',fullPage:true})
 })

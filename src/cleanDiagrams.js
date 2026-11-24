@@ -1,66 +1,32 @@
-// Diagrams intentionally show only the structural elements. Details remain in the inspector.
-// The same geometry is used for original and redesigned states so changes can be compared directly.
+// Boards intentionally show only structural elements; details are in the inspector.
+// All routes use the same geometry in the "Antes" and "Depois" states.
 const grids = {
  architecture: {
-  items: [
-   ['users',0,0],['edge',1,0],['erp',2,0],['bi',3,0],
-   ['connectivity',0,1],['power',1,1],['database',2,1],['etl',3,1],
-   ['physical',0,2],['backup',1,2],['recovery',2,2],['immutable',3,2],
-  ],
-  links: [
-   ['users','edge','acesso'],['edge','erp','pedidos'],['erp','database','transações'],
-   ['connectivity','edge','link'],['power','erp','energia'],['physical','power','suporte'],
-   ['database','backup','cópia'],['database','recovery','replicação'],
-   ['backup','immutable','off-site'],['database','etl','dados'],['etl','bi','indicadores'],
-   ['recovery','immutable','DR']
-  ]
+  items: [['users',0,0],['edge',1,0],['erp',2,0],['bi',3,0],['connectivity',0,1],['power',1,1],['database',2,1],['etl',3,1],['physical',0,2],['backup',1,2],['recovery',2,2],['immutable',3,2]],
+  links: [['users','edge','acesso'],['edge','erp','pedidos'],['erp','database','transações'],['connectivity','edge','link'],['power','erp','energia'],['physical','power','suporte'],['database','backup','cópia'],['database','recovery','replicação'],['backup','immutable','off-site'],['database','etl','dados'],['etl','bi','indicadores'],['recovery','immutable','DR']]
  },
  assets:{
-  items:[
-   ['inventory',0,0],['owners',1,0],['class',2,0],['dependencies',3,0],
-   ['threat',0,1],['scenarios',1,1],['bia',2,1],['matrix',3,1],
-   ['treat',0,2],['residual',1,2],['audit',2,2],['kri',3,2]
-  ],
-  links:[['inventory','owners'],['owners','class'],['class','dependencies'],['dependencies','threat'],['threat','scenarios'],['scenarios','bia'],['bia','matrix'],['matrix','treat'],['treat','residual'],['residual','audit'],['audit','kri']]
+  items:[['inventory',0,0],['owners',1,0],['class',2,0],['dependencies',3,0],['threat',0,1],['scenarios',1,1],['bia',2,1],['matrix',3,1],['treat',0,2],['residual',1,2],['audit',2,2],['kri',3,2]],
+  links:[['inventory','owners'],['owners','class'],['class','dependencies'],['dependencies','threat'],['threat','scenarios'],['scenarios','bia'],['bia','matrix'],['matrix','treat'],['residual','audit'],['audit','kri'],['treat','residual']]
  },
  identity:{
-  items:[
-   ['request',0,0],['joiner',1,0],['move',2,0],['offboard',3,0],
-   ['password',0,1],['mfa',1,1],['rbac',2,1],['sod',3,1],
-   ['service',0,2],['privileged',1,2],['reviews',2,2],['logs',3,2]
-  ],
+  items:[['request',0,0],['joiner',1,0],['move',2,0],['offboard',3,0],['password',0,1],['mfa',1,1],['rbac',2,1],['sod',3,1],['service',0,2],['privileged',1,2],['reviews',2,2],['logs',3,2]],
   links:[['request','joiner'],['joiner','move'],['move','offboard'],['password','mfa'],['mfa','rbac'],['rbac','sod'],['service','privileged'],['privileged','reviews'],['reviews','logs'],['joiner','mfa'],['rbac','privileged']]
  },
  restore:{
-  items:[
-   ['schedule',0,0],['protect',1,0],['copies',2,0],['keys',3,0],
-   ['detect',0,1],['isolate',1,1],['source',2,1],['infra',3,1],
-   ['db',0,2],['restore',1,2],['validate',2,2],['rpor',3,2]
-  ],
+  items:[['schedule',0,0],['protect',1,0],['copies',2,0],['keys',3,0],['detect',0,1],['isolate',1,1],['source',2,1],['infra',3,1],['db',0,2],['restore',1,2],['validate',2,2],['rpor',3,2]],
   links:[['schedule','protect'],['protect','copies'],['copies','keys'],['detect','isolate'],['isolate','source'],['source','infra'],['infra','db'],['db','restore'],['restore','validate'],['validate','rpor'],['copies','source']]
  },
  lifecycle:{
-  items:[
-   ['collect',0,0],['catalog',1,0],['legal',2,0],['use',3,0],
-   ['quality',0,1],['minimize',1,1],['classify',2,1],['store',3,1],
-   ['retain',0,2],['temporal',1,2],['delete',2,2],['replay',3,2]
-  ],
+  items:[['collect',0,0],['catalog',1,0],['legal',2,0],['use',3,0],['quality',0,1],['minimize',1,1],['classify',2,1],['store',3,1],['retain',0,2],['temporal',1,2],['delete',2,2],['replay',3,2]],
   links:[['collect','catalog'],['catalog','legal'],['legal','use'],['use','quality'],['quality','minimize'],['minimize','classify'],['classify','store'],['store','retain'],['retain','temporal'],['temporal','delete'],['delete','replay']]
  },
  policy:{
-  items:[
-   ['board',0,0],['scope',1,0],['roles',2,0],['standards',3,0],
-   ['passwords',0,1],['backup',1,1],['usage',2,1],['incident',3,1],
-   ['train',0,2],['exceptions',1,2],['audit',2,2],['auditplan',3,2]
-  ],
+  items:[['board',0,0],['scope',1,0],['roles',2,0],['standards',3,0],['passwords',0,1],['backup',1,1],['usage',2,1],['incident',3,1],['train',0,2],['exceptions',1,2],['audit',2,2],['auditplan',3,2]],
   links:[['board','scope'],['scope','roles'],['roles','standards'],['standards','passwords'],['passwords','backup'],['backup','usage'],['usage','incident'],['incident','train'],['train','exceptions'],['exceptions','audit'],['audit','auditplan']]
  },
  roadmap:{
-  items:[
-   ['phase1',0,0],['restore',1,0],['energy',2,0],['inventory',3,0],
-   ['phase2',0,1],['mfa',1,1],['psi',2,1],['monitor',3,1],
-   ['phase3',0,2],['dr',1,2],['phase4',2,2],['audit',3,2]
-  ],
+  items:[['phase1',0,0],['restore',1,0],['energy',2,0],['inventory',3,0],['phase2',0,1],['mfa',1,1],['psi',2,1],['monitor',3,1],['phase3',0,2],['dr',1,2],['phase4',2,2],['audit',3,2]],
   links:[['phase1','restore'],['restore','energy'],['energy','inventory'],['inventory','phase2'],['phase2','mfa'],['mfa','psi'],['psi','monitor'],['monitor','phase3'],['phase3','dr'],['dr','phase4'],['phase4','audit']]
  }
 }
@@ -69,103 +35,120 @@ const positions={x:[72,422,772,1122],y:[100,317,534]}
 export const CARD_WIDTH=226
 export const CARD_HEIGHT=104
 
-export function diagramFor(board) {
+export function diagramFor(board){
  const config=grids[board.id]
  const catalog=new Map(board.nodes.map(item=>[item.id,item]))
- const nodes=config.items.map(([id,col,row])=>({
-  item:catalog.get(id),x:positions.x[col],y:positions.y[row]
- })).filter(item=>item.item)
- const validIds=new Set(nodes.map(node=>node.item.id))
- return {nodes,links:config.links.filter(([from,to])=>validIds.has(from)&&validIds.has(to))}
+ const nodes=config.items.map(([id,col,row])=>({item:catalog.get(id),x:positions.x[col],y:positions.y[row]})).filter(node=>node.item)
+ const available=new Set(nodes.map(node=>node.item.id))
+ return {nodes,links:config.links.filter(([source,target])=>available.has(source)&&available.has(target))}
 }
 
-// Route connectors around *all* rectangular nodes, with clearance. A deterministic
-// Manhattan A* is used rather than diagonal edges that cut through components.
-const STEP=14
-const MARGIN=20
-const WIDTH=1540
-const HEIGHT=770
+const CLEARANCE=17
+const EXIT=34
+const TURN_PENALTY=48
 const DIRECTIONS=[[1,0],[-1,0],[0,1],[0,-1]]
-const key=(x,y)=>x+','+y
-const roundGrid=value=>Math.round(value/STEP)
-const fromGrid=value=>value*STEP
-const heuristic=(x,y,tx,ty)=>Math.abs(x-tx)+Math.abs(y-ty)
-
-function port(node,side){
- switch(side){
-  case 'left':return {x:node.x,y:node.y+CARD_HEIGHT/2,dx:-1,dy:0}
-  case 'right':return {x:node.x+CARD_WIDTH,y:node.y+CARD_HEIGHT/2,dx:1,dy:0}
-  case 'top':return {x:node.x+CARD_WIDTH/2,y:node.y,dx:0,dy:-1}
-  default:return {x:node.x+CARD_WIDTH/2,y:node.y+CARD_HEIGHT,dx:0,dy:1}
- }
+const equal=(a,b)=>Math.abs(a-b)<.01
+const pointEqual=(a,b)=>equal(a.x,b.x)&&equal(a.y,b.y)
+const vertex=(x,y)=>({x,y})
+const center=node=>({x:node.x+CARD_WIDTH/2,y:node.y+CARD_HEIGHT/2})
+const inside=(p,box)=>p.x>box.x-CLEARANCE&&p.x<box.x+CARD_WIDTH+CLEARANCE&&p.y>box.y-CLEARANCE&&p.y<box.y+CARD_HEIGHT+CLEARANCE
+const boundary=(node,side)=>{
+ const c=center(node)
+ if(side==='left')return {x:node.x,y:c.y,dx:-1,dy:0}
+ if(side==='right')return {x:node.x+CARD_WIDTH,y:c.y,dx:1,dy:0}
+ if(side==='top')return {x:c.x,y:node.y,dx:0,dy:-1}
+ return {x:c.x,y:node.y+CARD_HEIGHT,dx:0,dy:1}
 }
-
-function sidePair(a,b){
- const ax=a.x+CARD_WIDTH/2,ay=a.y+CARD_HEIGHT/2
- const bx=b.x+CARD_WIDTH/2,by=b.y+CARD_HEIGHT/2
- const dx=bx-ax,dy=by-ay
- if(Math.abs(dx)>Math.abs(dy)*.9)return dx>=0?['right','left']:['left','right']
- return dy>=0?['bottom','top']:['top','bottom']
+function sidePair(source,target){
+ const a=center(source),b=center(target),dx=b.x-a.x,dy=b.y-a.y
+ if(Math.abs(dx)>Math.abs(dy)*.82)return dx>0?['right','left']:['left','right']
+ return dy>0?['bottom','top']:['top','bottom']
 }
-
-function pathFind(start,end,obstacles){
- const sx=roundGrid(start.x),sy=roundGrid(start.y)
- const tx=roundGrid(end.x),ty=roundGrid(end.y)
- const limitX=roundGrid(WIDTH),limitY=roundGrid(HEIGHT)
- const blocked=(x,y)=>{
-  const px=fromGrid(x),py=fromGrid(y)
-  if(x<0||y<0||x>limitX||y>limitY)return true
-  return obstacles.some(o=>px>=o.x-MARGIN&&px<=o.x+CARD_WIDTH+MARGIN&&py>=o.y-MARGIN&&py<=o.y+CARD_HEIGHT+MARGIN)
+function clearSegment(a,b,obstacles){
+ if(!equal(a.x,b.x)&&!equal(a.y,b.y))return false
+ return !obstacles.some(box=>{
+  if(equal(a.y,b.y))return a.y>box.y-CLEARANCE&&a.y<box.y+CARD_HEIGHT+CLEARANCE&&Math.max(a.x,b.x)>box.x-CLEARANCE&&Math.min(a.x,b.x)<box.x+CARD_WIDTH+CLEARANCE
+  return a.x>box.x-CLEARANCE&&a.x<box.x+CARD_WIDTH+CLEARANCE&&Math.max(a.y,b.y)>box.y-CLEARANCE&&Math.min(a.y,b.y)<box.y+CARD_HEIGHT+CLEARANCE
+ })
+}
+const unique=arr=>[...new Set(arr)].sort((a,b)=>a-b)
+const k=(xi,yi,dir)=>xi+':'+yi+':'+dir
+function findOrthogonalRoute(start,end,boxes,occupied){
+ // Prefer a direct corridor or a single right-angle bend: consistent with the
+ // clean reference diagram, and avoids detours produced by graph search.
+ if(clearSegment(start,end,boxes))return [start,end]
+ for(const corner of [vertex(start.x,end.y),vertex(end.x,start.y)]){
+  if(clearSegment(start,corner,boxes)&&clearSegment(corner,end,boxes))return [start,corner,end]
  }
- let open=[{x:sx,y:sy,d:4,g:0,f:heuristic(sx,sy,tx,ty)}]
- const visited=new Map(),best=new Map([[key(sx,sy)+',4',0]])
- let destination=null
- let tries=0
- while(open.length&&tries++<45000){
-  open.sort((a,b)=>b.f-a.f)
-  const node=open.pop()
-  const state=key(node.x,node.y)+','+node.d
-  if(visited.has(state))continue
-  visited.set(state,node)
-  if(Math.abs(node.x-tx)<=1&&Math.abs(node.y-ty)<=1){destination=node;break}
-  for(let i=0;i<4;i++){
-   const [dx,dy]=DIRECTIONS[i],nx=node.x+dx,ny=node.y+dy
-   if(blocked(nx,ny)&&!(Math.abs(nx-tx)<=1&&Math.abs(ny-ty)<=1))continue
-   const g=node.g+1+(node.d!==4&&node.d!==i?5:0)
-   const nk=key(nx,ny)+','+i
-   if((best.get(nk)??Infinity)<=g)continue
-   best.set(nk,g)
-   open.push({x:nx,y:ny,d:i,g,f:g+heuristic(nx,ny,tx,ty),parent:node})
+ // Visibility graph: every junction and every start/end coordinate is exact.
+ // Unlike rounded grid A*, it cannot introduce diagonal joins or short zigzags.
+ const xs=unique([12,45,1490,start.x,end.x,...boxes.flatMap(b=>[b.x-CLEARANCE-10,b.x+CARD_WIDTH+CLEARANCE+10,b.x+CARD_WIDTH/2])])
+ const ys=unique([12,45,765,start.y,end.y,...boxes.flatMap(b=>[b.y-CLEARANCE-10,b.y+CARD_HEIGHT+CLEARANCE+10,b.y+CARD_HEIGHT/2])])
+ const sx=xs.indexOf(start.x),sy=ys.indexOf(start.y),tx=xs.indexOf(end.x),ty=ys.indexOf(end.y)
+ const queue=[{x:sx,y:sy,dir:-1,g:0,f:Math.abs(start.x-end.x)+Math.abs(start.y-end.y),parent:null}]
+ const best=new Map([[k(sx,sy,-1),0]])
+ let answer=null
+ // Small (usually <25 x 25) graph; deterministic tie-breaks prefer fewer bends.
+ for(let runs=0;queue.length&&runs<25000;runs++){
+  queue.sort((a,b)=>b.f-a.f||b.g-a.g)
+  const here=queue.pop()
+  if(here.g>best.get(k(here.x,here.y,here.dir))+.001)continue
+  if(here.x===tx&&here.y===ty){answer=here;break}
+  for(let d=0;d<4;d++){
+   const nx=here.x+DIRECTIONS[d][0],ny=here.y+DIRECTIONS[d][1]
+   if(nx<0||ny<0||nx>=xs.length||ny>=ys.length)continue
+   const p=vertex(xs[here.x],ys[here.y]),q=vertex(xs[nx],ys[ny])
+   if(!clearSegment(p,q,boxes))continue
+   const length=Math.abs(p.x-q.x)+Math.abs(p.y-q.y)
+   const orientation=d<2?'h':'v'
+   const segmentKey=orientation+':'+(orientation==='h'?p.y:p.x)+':'+(orientation==='h'?Math.min(p.x,q.x):Math.min(p.y,q.y))
+   const congestion=occupied.get(segmentKey)||0
+   const cost=here.g+length+(here.dir!==-1&&here.dir!==d?TURN_PENALTY:0)+congestion*18
+   const state=k(nx,ny,d)
+   if(cost>=(best.get(state)??Infinity))continue
+   best.set(state,cost)
+   queue.push({x:nx,y:ny,dir:d,g:cost,f:cost+Math.abs(xs[nx]-end.x)+Math.abs(ys[ny]-end.y),parent:here,segmentKey})
   }
  }
- if(!destination)return null
- const points=[]
- for(let current=destination;current;current=current.parent)points.push({x:fromGrid(current.x),y:fromGrid(current.y)})
- return points.reverse()
+ if(!answer)return null
+ const route=[]
+ for(let cursor=answer;cursor;cursor=cursor.parent){
+  route.push(vertex(xs[cursor.x],ys[cursor.y]))
+  if(cursor.segmentKey)occupied.set(cursor.segmentKey,(occupied.get(cursor.segmentKey)||0)+1)
+ }
+ return route.reverse()
 }
 function simplify(points){
- if(points.length<3)return points
- const result=[points[0]]
- for(let i=1;i<points.length-1;i++){
-  const a=result[result.length-1],b=points[i],c=points[i+1]
-  if((Math.abs(a.x-b.x)<.01&&Math.abs(b.x-c.x)<.01)||(Math.abs(a.y-b.y)<.01&&Math.abs(b.y-c.y)<.01))continue
-  result.push(b)
+ const output=[]
+ for(const p of points){
+  if(output.length&&pointEqual(output[output.length-1],p))continue
+  while(output.length>=2){
+   const a=output[output.length-2],b=output[output.length-1]
+   if((equal(a.x,b.x)&&equal(b.x,p.x))||(equal(a.y,b.y)&&equal(b.y,p.y)))output.pop()
+   else break
+  }
+  output.push(p)
  }
- result.push(points[points.length-1])
- return result
+ return output
+}
+export function pathIsOrthogonal(points){
+ return points.every((point,i)=>!i||equal(point.x,points[i-1].x)||equal(point.y,points[i-1].y))
 }
 export function routeLinks(layout){
- const byId=new Map(layout.nodes.map(node=>[node.item.id,node]))
+ const nodes=new Map(layout.nodes.map(node=>[node.item.id,node]))
+ const occupied=new Map()
  return layout.links.map(([source,target,label],index)=>{
-  const a=byId.get(source),b=byId.get(target)
-  const [aSide,bSide]=sidePair(a,b)
-  const start=port(a,aSide),end=port(b,bSide)
-  const startOuter={x:start.x+start.dx*37,y:start.y+start.dy*37}
-  const endOuter={x:end.x+end.dx*37,y:end.y+end.dy*37}
-  const obstacles=layout.nodes.filter(node=>node!==a&&node!==b)
-  const middle=pathFind(startOuter,endOuter,obstacles)
-  // Same-row links can remain a simple straight segment.
-  const points=simplify([{x:start.x,y:start.y},startOuter,...(middle||[]),endOuter,{x:end.x,y:end.y}])
-  return {id:'edge-'+index,source,target,label:label||'',points,aSide,bSide}
+  const a=nodes.get(source),b=nodes.get(target)
+  const [sourceSide,targetSide]=sidePair(a,b)
+  const sp=boundary(a,sourceSide),tp=boundary(b,targetSide)
+  const start=vertex(sp.x,sp.y),end=vertex(tp.x,tp.y)
+  const away=vertex(sp.x+sp.dx*EXIT,sp.y+sp.dy*EXIT)
+  const arrive=vertex(tp.x+tp.dx*EXIT,tp.y+tp.dy*EXIT)
+  const boxes=layout.nodes // include both endpoints; outside anchors stay outside padded obstacles
+  const route=findOrthogonalRoute(away,arrive,boxes,occupied)
+  if(!route)throw new Error('Não foi possível rotear '+source+' → '+target)
+  const points=simplify([start,away,...route,arrive,end])
+  if(!pathIsOrthogonal(points))throw new Error('Conexão não ortogonal: '+source+' → '+target)
+  return {id:'edge-'+index,source,target,label:label||'',points,sourceSide,targetSide}
  })
 }
