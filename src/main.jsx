@@ -124,7 +124,20 @@ function Diagram({board,phase,selected,onInspect}){
   }))
   return {nodes,edges:connections}
  },[board,after,selected?.id,onInspect])
- useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.09,maxZoom:1.1,duration:400}),120);return()=>clearTimeout(t)},[board.id,phase,selected?.id,flow])
+ useEffect(()=>{const t=setTimeout(()=>flow.fitView({padding:.09,maxZoom:1.1,duration:400}),120);return()=>clearTimeout(t)},[board.id,phase,flow])
+ useEffect(()=>{
+  const timer=setTimeout(()=>{
+   if(!selected){flow.fitView({padding:.09,maxZoom:1.1,duration:350});return}
+   const target=diagramFor(board).nodes.find(node=>node.item.id===selected.id)
+   const rect=surfaceRef.current?.getBoundingClientRect()
+   if(!target||!rect)return
+   const center={x:target.x+CARD_WIDTH/2,y:target.y+CARD_HEIGHT/2}
+   const screen=flow.flowToScreenPosition(center)
+   if(screen.x<rect.left+130||screen.x>rect.right-130||screen.y<rect.top+110||screen.y>rect.bottom-110)
+    flow.setCenter(center.x,center.y,{zoom:Math.min(flow.getZoom(),1),duration:360})
+  },310)
+  return()=>clearTimeout(timer)
+ },[selected?.id,board.id,flow])
  const positionTooltip=(event,node)=>{
   if(selected)return
   const rect=surfaceRef.current?.getBoundingClientRect()
