@@ -162,3 +162,8 @@
  .node-hover-summary{width:280px}
 }
 @media(prefers-reduced-motion:reduce){.node-hover-summary{animation:none}}
+
+/* Keep inspector and hover readable from the first rendered frame. */
+.node-hover-summary{animation:none}
+.inspector{animation:drawer-slide-solid .18s ease-out both;opacity:1}
+@keyframes drawer-slide-solid{from{transform:translateX(16px)}to{transform:translateX(0)}}
