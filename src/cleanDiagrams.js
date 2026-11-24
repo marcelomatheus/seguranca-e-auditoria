@@ -74,6 +74,12 @@ function clearSegment(a,b,obstacles){
 const unique=arr=>[...new Set(arr)].sort((a,b)=>a-b)
 const k=(xi,yi,dir)=>xi+':'+yi+':'+dir
 function findOrthogonalRoute(start,end,boxes,occupied){
+ // Prefer a direct corridor or a single right-angle bend: consistent with the
+ // clean reference diagram, and avoids detours produced by graph search.
+ if(clearSegment(start,end,boxes))return [start,end]
+ for(const corner of [vertex(start.x,end.y),vertex(end.x,start.y)]){
+  if(clearSegment(start,corner,boxes)&&clearSegment(corner,end,boxes))return [start,corner,end]
+ }
  // Visibility graph: every junction and every start/end coordinate is exact.
  // Unlike rounded grid A*, it cannot introduce diagonal joins or short zigzags.
  const xs=unique([12,45,1490,start.x,end.x,...boxes.flatMap(b=>[b.x-CLEARANCE-10,b.x+CARD_WIDTH+CLEARANCE+10,b.x+CARD_WIDTH/2])])
